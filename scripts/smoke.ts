@@ -50,6 +50,10 @@ await page.waitForFunction(() => document.querySelector('#status')!.textContent 
 check(true, `Postgres started in the browser`, `${((Date.now() - t0) / 1000).toFixed(1)} s`)
 await page.waitForFunction(() => document.querySelectorAll('.table-card').length > 0, { timeout: 20000 })
 check((await page.$$('.table-card')).length === 19, 'schema panel lists 19 tables')
+const clockA = await page.$eval('#clock', el => el.textContent ?? '')
+await new Promise(r => setTimeout(r, 1100))
+const clockB = await page.$eval('#clock', el => el.textContent ?? '')
+check(clockA !== clockB && /\d:\d\d:\d\d [AP]M E[SD]T$/.test(clockB), 'the header clock shows live Eastern time', clockB)
 
 // 1. trace the first task with the letters on
 await openTask('or-zones')

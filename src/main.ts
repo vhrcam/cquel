@@ -69,7 +69,7 @@ function columnsHtml(t: Table) {
 
 function renderSchema() {
   $('schema').innerHTML =
-    `<p>${tables.length} tables in one warehouse. PK = primary key, → points at the table a foreign key refers to.</p>` +
+    `<p>${tables.length} tables in one warehouse. PK = primary key, → points at the table a foreign key refers to.</p><p>The data's clock is frozen at ${WMS_CLOCK}, so <code>CURRENT_DATE</code> is 2026-11-10 and <code>now()</code> never moves.</p>` +
     tables
       .map(t => `<details class="table-card"><summary><span>${esc(t.name)}</span><span class="rows">${t.rows.toLocaleString()} rows</span></summary>${t.note ? `<p class="table-note">${esc(t.note)}</p>` : ''}${columnsHtml(t)}</details>`)
       .join('')
@@ -309,7 +309,13 @@ db.onRestart = () => prepare()
 
 // ---------- start
 
-$('clock').textContent = `wms clock · ${WMS_CLOCK}`
+const eastern = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit', timeZoneName: 'short' })
+const tick = () => {
+  const p = Object.fromEntries(eastern.formatToParts(new Date()).map(x => [x.type, x.value]))
+  $('clock').textContent = `${p.weekday} ${p.month} ${p.day} · ${p.hour}:${p.minute}:${p.second} ${p.dayPeriod} ${p.timeZoneName}`
+  setTimeout(tick, 1000 - (Date.now() % 1000))
+}
+tick()
 document.querySelector('#run kbd')!.textContent = RUN_KEY
 $('ghost').setAttribute('aria-checked', String(ghost))
 openTask(task)
