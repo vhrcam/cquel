@@ -169,6 +169,7 @@ function setWhy(on: boolean) {
   $('why-switch').setAttribute('aria-checked', String(on))
   explainedText = null
   renderWhy()
+  if (!narrow()) editor.focus()
 }
 
 function renderOutput() {
