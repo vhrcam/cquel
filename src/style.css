@@ -235,7 +235,7 @@ button.chip:hover, button.chip[aria-expanded='true'] { color: var(--green); bord
 
 /* why tips */
 .bench { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; margin: 18px 0 0; }
-.main > .bench.with-why { max-width: 1260px; grid-template-columns: minmax(0, 1fr) 310px; }
+.main > .bench.with-why { max-width: 1260px; grid-template-columns: minmax(0, 1fr) 280px; gap: 14px; }
 .bench .ed { margin: 0; }
 .why { display: flex; flex-direction: column; gap: 8px; align-self: start; }
 .why[hidden] { display: none; }
@@ -299,6 +299,17 @@ tr:last-child td { border-bottom: 0; }
 
 .scrim { display: none; }
 
+@media (min-width: 1181px) {
+  .bench.with-why .ed-layer, .bench.with-why .ed-input { font-size: 14px; }
+}
+
+@media (max-width: 1180px) {
+  .main > .bench.with-why { grid-template-columns: minmax(0, 1fr); }
+  .bench.with-why .why { position: static; max-height: none; display: grid; grid-auto-flow: column; grid-auto-columns: min(260px, 78vw); gap: 10px; overflow-x: auto; overflow-y: hidden; padding-bottom: 6px; scroll-snap-type: x proximity; }
+  .bench.with-why .why-head { display: none; }
+  .tip { scroll-snap-align: start; }
+}
+
 @media (max-width: 860px) {
   .app { grid-template-columns: minmax(0, 1fr); }
   .menu { display: inline-block; background: none; border: 1px solid var(--line); border-radius: 6px; color: var(--green); padding: 3px 10px; font-size: 13px; cursor: pointer; }
@@ -323,6 +334,8 @@ tr:last-child td { border-bottom: 0; }
 
 @media (max-width: 600px) {
   .clock { display: none; }
-  .switch-label { display: none; }
+  .switch-label .long { display: none; }
+  .top-right { gap: 14px; }
+  .switch { gap: 7px; }
   .ed-layer, .ed-input { font-size: 14px; padding: 14px; }
 }

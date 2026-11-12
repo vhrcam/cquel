@@ -144,11 +144,15 @@ function renderWhy() {
       : `${head}<p class="muted">Start typing, and a tip shows up for each SQL word you use.</p>`
   }
   const on = activeTip(explained!, pos)
+  const box = panel.getBoundingClientRect()
+  const sideways = panel.scrollWidth > panel.clientWidth + 1
   for (const card of panel.querySelectorAll<HTMLElement>('.tip')) {
     const hit = card.dataset.tip === on?.id
     card.classList.toggle('on', hit)
-    const below = card.offsetTop + card.offsetHeight > panel.scrollTop + panel.clientHeight
-    if (hit && (card.offsetTop < panel.scrollTop || below)) panel.scrollTo({ top: card.offsetTop - 28, behavior: 'smooth' })
+    if (!hit) continue
+    const r = card.getBoundingClientRect()
+    if (sideways && (r.left < box.left || r.right > box.right)) panel.scrollBy({ left: r.left - box.left - 8, behavior: 'smooth' })
+    if (!sideways && (r.top < box.top + 24 || r.bottom > box.bottom)) panel.scrollBy({ top: r.top - box.top - 28, behavior: 'smooth' })
   }
 }
 
