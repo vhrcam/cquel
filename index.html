@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Practice SQL on a sample warehouse database by tracing transparent queries, then writing them from memory." />
+    <meta name="theme-color" content="#0d1117" />
+    <title>cquel</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d1117'/%3E%3Cpath d='M10 24 15.5 8M17 24 22.5 8' stroke='%2328fe14' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E" />
+  </head>
+  <body>
+    <header class="top">
+      <button class="menu" id="menu" aria-label="Show tasks" aria-expanded="false">tasks</button>
+      <div class="brand"><span class="slashes">//</span>cquel <span class="tag">fill in the transparent letters to train the brain</span></div>
+      <div class="top-right">
+        <span class="clock" id="clock" title="The WMS clock is frozen, so CURRENT_DATE and now() always give the same answers"></span>
+        <label class="switch">
+          <span class="switch-label">transparent letters</span>
+          <button type="button" role="switch" id="ghost" aria-checked="true" aria-label="Transparent letters"></button>
+        </label>
+      </div>
+    </header>
+    <div class="app">
+      <aside class="side" id="side">
+        <div class="side-tabs" role="tablist">
+          <button type="button" role="tab" data-tab="tasks" aria-selected="true">tasks</button>
+          <button type="button" role="tab" data-tab="schema" aria-selected="false">schema</button>
+        </div>
+        <nav class="tasklist" id="tasklist" aria-label="Tasks"></nav>
+        <div class="schema" id="schema" hidden></div>
+      </aside>
+      <div class="scrim" id="scrim" hidden></div>
+      <main class="main" id="main">
+        <section class="task" id="task"></section>
+        <section class="given" id="given" hidden></section>
+        <div class="ed" id="editor"></div>
+        <div class="hint" id="hint"></div>
+        <div class="actions">
+          <button type="button" class="btn primary" id="run">run <kbd>⌘↵</kbd></button>
+          <button type="button" class="btn" id="reset" title="Put the database back to how it started">reset db</button>
+          <span class="status" id="status" role="status" aria-live="polite"></span>
+          <span class="nav">
+            <button type="button" class="btn" id="prev" aria-label="Previous task">←</button>
+            <button type="button" class="btn" id="next">next →</button>
+          </span>
+        </div>
+        <div class="note" id="note" hidden></div>
+        <section class="out" id="out" hidden>
+          <div class="out-tabs" role="tablist">
+            <button type="button" role="tab" data-out="output" aria-selected="true">output</button>
+            <button type="button" role="tab" data-out="expected" aria-selected="false">expected</button>
+          </div>
+          <div class="out-body" id="out-body"></div>
+        </section>
+      </main>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
