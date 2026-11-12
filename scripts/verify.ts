@@ -6,7 +6,8 @@ import { PGlite } from '@electric-sql/pglite'
 import { Engine } from '../src/db/engine.ts'
 import { WMS_NOW } from '../src/db/clock.ts'
 import { compareGrids } from '../src/db/compare.ts'
-import { hasTopLevelOrderBy, statements } from '../src/db/sqltext.ts'
+import { hasTopLevelOrderBy, statements, blankOut } from '../src/db/sqltext.ts'
+import { explain, TIPS } from '../src/app/why.ts'
 import { align, changedMask } from '../src/app/align.ts'
 import { tracks, allTasks, taskById } from '../src/tasks/index.ts'
 
@@ -39,6 +40,26 @@ for (const t of allTasks) {
 const typo = align('SELEC sku FROM items;', 'SELECT sku FROM items;')
 if (typo.done || typo.errors !== 1 || typo.marks[7] !== 1) bad('align', 'a missing letter should be one error and the next word should line up again')
 if (!changedMask('a = NULL', 'a IS NULL').some(Boolean)) bad('align', 'changedMask missed a change')
+
+// Why tips: every SQL word in an answer (or a broken starting query) is explained by one of its tips.
+const tipIds = new Set<string>()
+for (const tp of TIPS) {
+  if (tipIds.has(tp.id)) bad('why', `duplicate tip id ${tp.id}`)
+  tipIds.add(tp.id)
+  if (!tp.why.trim()) bad('why', `tip ${tp.id} has no text`)
+}
+const usedTips = new Set<string>()
+for (const t of allTasks) {
+  for (const sql of [t.solution, t.given]) {
+    if (!sql) continue
+    const found = explain(sql).found
+    found.forEach(f => usedTips.add(f.tip.id))
+    const covered = new Set(found.flatMap(f => f.tip.words))
+    const missing = [...new Set(blankOut(sql).match(/\b[A-Z][A-Z_]+\b/g) ?? [])].filter(w => !covered.has(w))
+    if (missing.length) bad(t.id, `no why tip covers ${missing.join(', ')}`)
+  }
+}
+console.log(`Why tips: ${usedTips.size} of ${TIPS.length} tips show up in the answers, and every SQL word in them is covered.`)
 
 for (const track of tracks) {
   console.log(`\n${track.name}`)
