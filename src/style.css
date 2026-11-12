@@ -43,6 +43,7 @@ code {
 }
 
 kbd { font: inherit; font-size: 11px; color: var(--muted); }
+@media (hover: none) { kbd { display: none; } }
 
 /* header */
 .top {

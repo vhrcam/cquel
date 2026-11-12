@@ -34,6 +34,7 @@ const progressOf = (id: string) => saved.progress[id] ?? {}
 const draftKey = (id: string, on: boolean) => `${id}:${on ? 'trace' : 'free'}`
 const narrow = () => matchMedia('(max-width: 860px)').matches
 const RUN_KEY = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘↵' : 'ctrl+↵'
+const RUN_HOW = matchMedia('(hover: none)').matches ? 'tap run' : `${RUN_KEY} to run`
 
 function mark(id: string) {
   const p = progressOf(id)
@@ -122,7 +123,7 @@ function loadEditor() {
   editor.set(draft ?? (ghost ? '' : task.given ?? ''), ghost ? task.solution : null, task.kind === 'fix-query' ? task.given : undefined)
   $('hint').textContent = ghost
     ? `type over the transparent letters · it runs when you finish${task.kind === 'fix-query' ? ' · underlined letters are the fix' : ''}`
-    : `letters off: write it from memory · ${RUN_KEY} to run`
+    : `letters off: write it from memory · ${RUN_HOW}`
   explainedText = null
   renderWhy()
 }
