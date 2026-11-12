@@ -4,7 +4,8 @@ import { DbClient } from './db/client.ts'
 import type { Prepared, Checked, RunResult } from './db/engine.ts'
 import { TraceEditor } from './app/editor.ts'
 import { WMS_CLOCK } from './db/clock.ts'
-import { esc, markup, gridHtml, runHtml } from './app/render.ts'
+import { esc, markup, gridHtml, runHtml, inline } from './app/render.ts'
+import { explain, type Explained } from './app/why.ts'
 import { saved, persist } from './app/store.ts'
 
 type Column = { name: string; type: string; note: string; key: string; ref: string }
@@ -23,6 +24,10 @@ let lastSql = ''
 let lastRun: Checked | null = null
 let outTab: 'output' | 'expected' = 'output'
 let starting = true
+let whyOn = saved.why ?? false
+let explainedText: string | null = null
+let explained: Explained | null = null
+let whyFrame = 0
 
 const KIND = { query: 'query', 'fix-query': 'fix the query', 'fix-data': 'ticket' }
 const progressOf = (id: string) => saved.progress[id] ?? {}
@@ -118,6 +123,39 @@ function loadEditor() {
   $('hint').textContent = ghost
     ? `type over the transparent letters · it runs when you finish${task.kind === 'fix-query' ? ' · underlined letters are the fix' : ''}`
     : `letters off: write it from memory · ${RUN_KEY} to run`
+  explainedText = null
+  renderWhy()
+}
+
+// ---------- why tips
+
+function renderWhy() {
+  $('bench').classList.toggle('with-why', whyOn)
+  const panel = $('why')
+  panel.hidden = !whyOn
+  if (!whyOn) return
+  const { text } = editor.where()
+  if (text === explainedText) return
+  explainedText = text
+  explained = explain(text)
+  const head = '<div class="why-head">why each word is there</div>'
+  panel.innerHTML = explained.found.length
+    ? head + explained.found.map(f => `<div class="tip" data-tip="${f.tip.id}"><div class="tip-label">${esc(f.tip.label)}</div><div class="tip-line">${esc(f.line)}</div><p>${inline(f.tip.why)}</p></div>`).join('')
+    : `${head}<p class="muted">Start typing, and a tip shows up for each SQL word you use.</p>`
+}
+
+const queueWhy = () => {
+  cancelAnimationFrame(whyFrame)
+  whyFrame = requestAnimationFrame(renderWhy)
+}
+
+function setWhy(on: boolean) {
+  whyOn = on
+  saved.why = on
+  persist()
+  $('why-switch').setAttribute('aria-checked', String(on))
+  explainedText = null
+  renderWhy()
 }
 
 function renderOutput() {
@@ -250,6 +288,7 @@ editor.onInput = v => {
 editor.onComplete = () => run()
 editor.onRun = () => run()
 editor.onPasteBlocked = () => setStatus('pending', 'Paste is off while the letters are on. Tracing works by typing.')
+editor.onCaret = queueWhy
 
 $('tasklist').addEventListener('click', e => {
   const el = (e.target as HTMLElement).closest<HTMLElement>('[data-task], [data-track]')
@@ -290,6 +329,7 @@ $('out').addEventListener('click', e => {
 $('run').addEventListener('click', () => run())
 $('reset').addEventListener('click', () => resetDb())
 $('ghost').addEventListener('click', () => setGhost(!ghost))
+$('why-switch').addEventListener('click', () => setWhy(!whyOn))
 $('menu').addEventListener('click', () => openSide(!$('side').classList.contains('open')))
 $('scrim').addEventListener('click', () => openSide(false))
 const step = (d: number) => {
@@ -318,6 +358,7 @@ const tick = () => {
 tick()
 document.querySelector('#run kbd')!.textContent = RUN_KEY
 $('ghost').setAttribute('aria-checked', String(ghost))
+$('why-switch').setAttribute('aria-checked', String(whyOn))
 openTask(task)
 setStatus('', 'starting Postgres…')
 db.ready.then(() => {

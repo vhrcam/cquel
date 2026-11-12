@@ -3,6 +3,7 @@
 type Saved = {
   current?: string
   ghost?: boolean
+  why?: boolean
   progress: Record<string, { traced?: boolean; solved?: boolean }>
   drafts: Record<string, string>
   closed: string[]

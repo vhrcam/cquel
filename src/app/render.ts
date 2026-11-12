@@ -3,6 +3,8 @@ import type { PgError, RunResult } from '../db/engine.ts'
 
 export const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 
+export const inline = (text: string) => esc(text).replace(/`([^`]+)`/g, '<code>$1</code>')
+
 // Task text: `code`, **bold**, blank line = new paragraph.
 export function markup(text: string) {
   return text
