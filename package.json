@@ -1,0 +1,26 @@
+{
+  "name": "cquel",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "verify": "node scripts/verify.ts",
+    "sql": "node scripts/sql.ts",
+    "smoke": "node scripts/smoke.ts"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "^0.5.16"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "puppeteer-core": "^25.17.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8"
+  },
+  "engines": {
+    "node": ">=22.18"
+  }
+}
