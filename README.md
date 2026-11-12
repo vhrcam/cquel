@@ -9,6 +9,7 @@ cquel is for practicing SQL on a sample warehouse management system (WMS) databa
 - **A real Postgres database runs in your browser.** It uses [PGlite](https://pglite.dev) and holds one warehouse's data: locations, items, stock, purchase orders and receipts, customer orders and waves, pick, putaway and replenishment tasks, cycle counts, the inventory history and the ERP interface log.
 - **The switch in the top right turns the transparent letters on or off.** With the letters on, the letters you type turn solid green, or red when they're wrong. Finishing the trace runs the query. With the letters off you write the query yourself.
 - **Tasks are checked by their result, not their text.** Any query that returns the right rows passes. Column order doesn't matter, and row order only matters when the task asks for a sort. When an answer is wrong, the message says how (for example "7 rows, expected 8").
+- **The why switch shows tip boxes beside the editor.** There's one box for each SQL word in the query, from SELECT and FROM down to the `;`. Each box shows the line the word is on and says why you'd use it. The box for the part you're typing lights up as you go. With the letters on, the tips explain the answer you're tracing. With the letters off, they explain the query you're writing.
 - **Each task keeps two marks:** ◐ traced with the letters on, and ● solved with the letters off.
 - **The warehouse clock is frozen at one moment,** so `CURRENT_DATE` and `now()` always give the same answers.
 
@@ -43,7 +44,7 @@ Then open the link it prints. Node 22.18 or newer is needed for the scripts belo
 
 ## Scripts
 
-- `npm run verify` runs every task's answer against the database. It also checks that each broken query and each ticket fails before the fix and passes after.
+- `npm run verify` runs every task's answer against the database. It checks that each broken query and each ticket fails before the fix and passes after, and that every SQL word in the answers has a why tip.
 - `npm run sql -- "SELECT * FROM zones"` runs any query against the sample database in the terminal.
 - `npm run smoke` drives the built app in headless Chrome. Run `npm run build` and `npm run preview` first.
 - `npm run build` type-checks and builds a static site into `dist/`.
