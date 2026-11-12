@@ -5,7 +5,7 @@ import type { Prepared, Checked, RunResult } from './db/engine.ts'
 import { TraceEditor } from './app/editor.ts'
 import { WMS_CLOCK } from './db/clock.ts'
 import { esc, markup, gridHtml, runHtml, inline } from './app/render.ts'
-import { explain, type Explained } from './app/why.ts'
+import { explain, activeTip, type Explained } from './app/why.ts'
 import { saved, persist } from './app/store.ts'
 
 type Column = { name: string; type: string; note: string; key: string; ref: string }
@@ -134,14 +134,22 @@ function renderWhy() {
   const panel = $('why')
   panel.hidden = !whyOn
   if (!whyOn) return
-  const { text } = editor.where()
-  if (text === explainedText) return
-  explainedText = text
-  explained = explain(text)
-  const head = '<div class="why-head">why each word is there</div>'
-  panel.innerHTML = explained.found.length
-    ? head + explained.found.map(f => `<div class="tip" data-tip="${f.tip.id}"><div class="tip-label">${esc(f.tip.label)}</div><div class="tip-line">${esc(f.line)}</div><p>${inline(f.tip.why)}</p></div>`).join('')
-    : `${head}<p class="muted">Start typing, and a tip shows up for each SQL word you use.</p>`
+  const { text, pos } = editor.where()
+  if (text !== explainedText) {
+    explainedText = text
+    explained = explain(text)
+    const head = '<div class="why-head">why each word is there</div>'
+    panel.innerHTML = explained.found.length
+      ? head + explained.found.map(f => `<div class="tip" data-tip="${f.tip.id}"><div class="tip-label">${esc(f.tip.label)}</div><div class="tip-line">${esc(f.line)}</div><p>${inline(f.tip.why)}</p></div>`).join('')
+      : `${head}<p class="muted">Start typing, and a tip shows up for each SQL word you use.</p>`
+  }
+  const on = activeTip(explained!, pos)
+  for (const card of panel.querySelectorAll<HTMLElement>('.tip')) {
+    const hit = card.dataset.tip === on?.id
+    card.classList.toggle('on', hit)
+    const below = card.offsetTop + card.offsetHeight > panel.scrollTop + panel.clientHeight
+    if (hit && (card.offsetTop < panel.scrollTop || below)) panel.scrollTo({ top: card.offsetTop - 28, behavior: 'smooth' })
+  }
 }
 
 const queueWhy = () => {
