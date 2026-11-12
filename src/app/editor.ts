@@ -30,11 +30,13 @@ export class TraceEditor {
   private mask: boolean[] = []
   private changed: boolean[] = []
   private fired = false
+  private next = 0
   placeholder = ''
   onInput: (value: string) => void = () => {}
   onComplete: () => void = () => {}
   onRun: () => void = () => {}
   onPasteBlocked: () => void = () => {}
+  onCaret: () => void = () => {}
 
   constructor(root: HTMLElement) {
     this.root = root
@@ -43,6 +45,7 @@ export class TraceEditor {
     this.input = root.querySelector('textarea')!
     this.input.addEventListener('input', () => this.changedInput())
     this.input.addEventListener('keydown', e => this.key(e))
+    for (const ev of ['keyup', 'click', 'focus']) this.input.addEventListener(ev, () => this.onCaret())
     this.input.addEventListener('paste', e => {
       if (this.ghost === null) return
       e.preventDefault()
@@ -63,6 +66,12 @@ export class TraceEditor {
     return this.input.value
   }
 
+  // The query being worked on and where you are in it: the answer and the next letter to trace,
+  // or (letters off) your own text and the cursor.
+  where() {
+    return this.ghost !== null ? { text: this.ghost, pos: this.next } : { text: this.input.value, pos: this.input.selectionStart }
+  }
+
   focus() {
     this.input.focus({ preventScroll: true })
   }
@@ -70,6 +79,7 @@ export class TraceEditor {
   private changedInput() {
     this.render()
     this.onInput(this.input.value)
+    this.onCaret()
   }
 
   private render() {
@@ -77,6 +87,7 @@ export class TraceEditor {
     let html: string
     if (this.ghost !== null) {
       const a = align(v, this.ghost, this.mask)
+      this.next = a.next
       html = spans(v, i => (a.marks[i] ? 'ok' : 'bad')) + spans(this.ghost.slice(a.next), k => (this.changed[a.next + k] ? 'gh chg' : 'gh'))
       this.root.classList.toggle('done', a.done)
       if (a.done && !this.fired) {
