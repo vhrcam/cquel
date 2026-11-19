@@ -55,6 +55,30 @@ GROUP BY u.full_name
 ORDER BY units DESC;`,
     },
     {
+      id: 'rc-fix-between',
+      title: 'Fix: a day with no receipts',
+      kind: 'fix-query',
+      skills: ['BETWEEN', 'timestamps'],
+      learn: "`received_at` is a timestamp: a date and a time. Compare it with a plain date like '2026-11-09' and Postgres reads that date as midnight, 2026-11-09 00:00:00.",
+      prompt: "Yesterday's receiving report says nobody received anything on Nov 9, but the dock was busy all day. The query runs without an error. Fix it so it covers all of Nov 9.",
+      returns: 'full_name, pallets, units · most units first',
+      tables: ['receipts', 'users'],
+      given: `SELECT u.full_name, COUNT(*) AS pallets, SUM(r.qty) AS units
+FROM receipts r
+JOIN users u ON u.user_id = r.received_by
+WHERE r.received_at BETWEEN '2026-11-09' AND '2026-11-09'
+GROUP BY u.full_name
+ORDER BY units DESC;`,
+      solution: `SELECT u.full_name, COUNT(*) AS pallets, SUM(r.qty) AS units
+FROM receipts r
+JOIN users u ON u.user_id = r.received_by
+WHERE r.received_at >= '2026-11-09'
+  AND r.received_at < '2026-11-10'
+GROUP BY u.full_name
+ORDER BY units DESC;`,
+      note: "`>=` the day and `<` the next day catches every second of Nov 9 and nothing from Nov 10. `received_at::date = '2026-11-09'` works too, but on a big table it can't use an index. Carlos Romero's total looks big because receipt {receiptId} was keyed as 4800 instead of 480. A ticket at the end of this track fixes it.",
+    },
+    {
       id: 'rc-short',
       title: 'Short shipments',
       kind: 'query',

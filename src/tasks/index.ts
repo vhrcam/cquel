@@ -14,6 +14,7 @@ const prep = (t: Task): Task => ({
   solution: fill(t.solution),
   given: t.given && fill(t.given),
   returns: t.returns && fill(t.returns),
+  note: t.note && fill(t.note),
 })
 
 export const tracks: Track[] = [orientation, inventory, receiving, shipping, replen, labor, support].map(tr => ({ ...tr, tasks: tr.tasks.map(prep) }))
