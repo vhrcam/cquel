@@ -179,6 +179,26 @@ ORDER BY l.location_code;`,
       note: "`NOT EXISTS` asks “is there no matching row?”, so faces that were never counted at all show up too. `LEFT JOIN ... WHERE cc.count_id IS NULL` works as well.",
     },
     {
+      id: 'ic-recall',
+      title: 'Recall trace',
+      kind: 'query',
+      skills: ['JOIN', 'GROUP BY'],
+      learn: "History tables often store a reference number instead of an id. In `inventory_txns`, a PICK's `ref_no` is the order number, so you join it to `orders.order_no`: text to text.",
+      prompt: "The supplier recalled lot **L260915B** of SKU 10513. The two pallets left in reserve are on HOLD, but the pick face sold from that lot until early November. Customer service needs every shipped order that got some of it: who it went to and how many units. Each PICK in `inventory_txns` records the lot it took, and its `qty` is negative because the units left the face.",
+      returns: 'order_no, customer_name, shipped_at, units · by shipped_at, then order_no',
+      tables: ['inventory_txns', 'orders', 'customers'],
+      solution: `SELECT o.order_no, c.customer_name, o.shipped_at, -SUM(x.qty) AS units
+FROM inventory_txns x
+JOIN orders o ON o.order_no = x.ref_no
+JOIN customers c ON c.customer_id = o.customer_id
+WHERE x.txn_type = 'PICK'
+  AND x.lot_no = 'L260915B'
+  AND o.status = 'SHIPPED'
+GROUP BY o.order_no, c.customer_name, o.shipped_at
+ORDER BY o.shipped_at, o.order_no;`,
+      note: "Lot numbers are only unique within an item, so a careful version also checks the SKU. Tracing like this is why lots get scanned on every pick: without them, customer service would have to call everyone who ordered SKU 10513.",
+    },
+    {
       id: 'ic-fix-group',
       title: 'Fix: GROUP BY error',
       kind: 'fix-query',
