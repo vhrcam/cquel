@@ -9,6 +9,7 @@ import { compareGrids } from '../src/db/compare.ts'
 import { hasTopLevelOrderBy, statements, blankOut } from '../src/db/sqltext.ts'
 import { explain, skillTip, TIPS, GROUPS, LOOKUP } from '../src/app/why.ts'
 import { align, changedMask } from '../src/app/align.ts'
+import { helpFor } from '../src/app/errors.ts'
 import { tracks, allTasks, taskById } from '../src/tasks/index.ts'
 
 const show = new Set((process.argv.find(a => a.startsWith('--show='))?.slice(7) ?? process.argv[process.argv.indexOf('--show') + 1] ?? '').split(',').filter(Boolean))
@@ -131,6 +132,60 @@ for (const [id, sql, want] of wrong) {
   if (!want.test(r.verdict.message)) bad(id, `expected a message like ${want}, got "${r.verdict.message}"`)
   else console.log(`  ✓ ${id.padEnd(18)} ${r.verdict.message}`)
 }
+
+// Error help: each of these real Postgres errors gets the plain-English help it should.
+const errorCases: [string, string][] = [
+  ['SELECT skuu FROM items', 'no-column'],
+  ['SELECT * FROM locations WHERE status = LOCKED', 'no-column'],
+  ['SELECT * FROM locations WHERE status = "LOCKED"', 'no-column'],
+  ['SELECT i.skuu FROM items i', 'no-column'],
+  ['UPDATE users SET actve = false WHERE user_id = 1', 'column-of-table'],
+  ['SELECT * FROM inventories', 'no-table'],
+  ['SELECT order_id FROM orders o JOIN order_lines ol ON ol.order_id = o.order_id', 'ambiguous'],
+  ['SELECT zone_code, location_code, COUNT(*) FROM locations GROUP BY zone_code', 'group-by'],
+  ['SELECT zone_code FROM locations WHERE COUNT(*) > 3 GROUP BY zone_code', 'agg-where'],
+  ['SELECT sku FROM items WHERE ROW_NUMBER() OVER (ORDER BY sku) < 3', 'window-where'],
+  ['SELECT sku, FROM items', 'syntax'],
+  ['SELECT sku FROM items ORDER BY', 'syntax-end'],
+  ["SELECT sku FROM items WHERE sku = '10105", 'unterminated'],
+  ['SELECT 1 / 0', 'divide-zero'],
+  ["SELECT * FROM orders WHERE ship_by = '2026-13-45'", 'bad-date'],
+  ["SELECT * FROM orders WHERE ship_by = 'next week'", 'bad-date'],
+  ["UPDATE tasks SET status = 'OPEN' AND assigned_to = NULL WHERE task_id = 1", 'bad-bool'],
+  ["SELECT * FROM items WHERE item_id = 'abc'", 'bad-number'],
+  ['SELECT * FROM items WHERE sku = 10105', 'types'],
+  ['SELECT * FROM tasks WHERE created_at > now() - 2', 'types'],
+  ['SELECT inv.qty_on_hand FROM inventory', 'no-alias'],
+  ['SELECT inventory.qty_on_hand FROM inventory inv', 'use-alias'],
+  ['INSERT INTO pick_faces (location_id, item_id, min_qty, max_qty) VALUES (258, 99999, 1, 2)', 'fk-insert'],
+  ['DELETE FROM orders WHERE order_id = 1', 'fk-delete'],
+  ["INSERT INTO zones (zone_code, zone_name) VALUES ('X1', 'Test')", 'not-null'],
+  ["INSERT INTO zones (zone_code, zone_name, zone_type) VALUES ('RCV', 'Dup', 'DOCK')", 'duplicate'],
+  ["UPDATE locations SET status = 'Locked' WHERE location_id = 1", 'check'],
+  ['SELECT * FROM items WHERE item_id = (SELECT item_id FROM items)', 'many-rows'],
+  ['SELECT * FROM items WHERE item_id = (SELECT item_id, sku FROM items LIMIT 1)', 'many-columns'],
+  ['SELECT ROUND(random(), 1)', 'no-function'],
+  ["INSERT INTO zones (zone_code, zone_name, zone_type) VALUES ('X1', 'Test')", 'insert-count'],
+  ['SELECT * FROM items WHERE sku', 'not-boolean'],
+  ['SELECT * FROM items i JOIN items i ON true', 'same-name'],
+  ['UPDATE users SET hired_on = 5 WHERE user_id = 1', 'wrong-type'],
+]
+console.log('\nError help')
+const helped = new Set<string>()
+for (const [sql, want] of errorCases) {
+  const run = await engine.isolated(sql)
+  const help = run.error && helpFor(run.error, sql)
+  if (!run.error) bad('errors', `expected an error from: ${sql}`)
+  else if (!help || help.id !== want) bad('errors', `"${run.error.message}" got ${help ? help.id : 'no help'}, expected ${want}`)
+  else helped.add(help.id)
+}
+await db.exec('BEGIN')
+await db.exec('SELECT 1 / 0').catch(() => {})
+const aborted = await db.exec('SELECT 1').then(() => null, e => (e as Error).message)
+await db.exec('ROLLBACK')
+if (helpFor({ message: aborted ?? '' })?.id !== 'aborted') bad('errors', `an aborted transaction got no help: ${aborted}`)
+else helped.add('aborted')
+console.log(`  ✓ ${helped.size} kinds of error get plain-English help`)
 
 console.log(problems ? `\n${problems} problem${problems === 1 ? '' : 's'}` : `\nAll ${allTasks.length} tasks check out.`)
 await db.close()
