@@ -2,6 +2,8 @@
 
 `//cquel` · fill in the transparent letters to train the brain.
 
+**Live at [cquel.vercel.app](https://cquel.vercel.app)**
+
 cquel teaches people who work with a warehouse management system (WMS) to write SQL, run it, and fix the problems that turn up in a warehouse's data, using a sample WMS database. Each task shows its answer query as transparent letters. Type over them to learn how the query is built, then switch the letters off and write it from memory.
 
 ## How it works
