@@ -467,8 +467,8 @@ tick()
 document.querySelector('#run kbd')!.textContent = RUN_KEY
 $('ghost').setAttribute('aria-checked', String(ghost))
 $('ref-switch').setAttribute('aria-checked', String(refOn))
-openTask(task)
 placeRef()
+openTask(task)
 setStatus('', 'starting Postgres…')
 db.ready.then(() => {
   starting = false
