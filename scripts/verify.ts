@@ -46,18 +46,18 @@ if (!changedMask('a = NULL', 'a IS NULL').some(Boolean)) bad('align', 'changedMa
 // shows up exactly once in the look up list, and every SQL word in an answer (or a broken query) is covered.
 const tipIds = new Set<string>()
 for (const tp of TIPS) {
-  if (tipIds.has(tp.id)) bad('why', `duplicate tip id ${tp.id}`)
+  if (tipIds.has(tp.id)) bad('reference', `duplicate tip id ${tp.id}`)
   tipIds.add(tp.id)
-  for (const field of ['means', 'does', 'write', 'dont'] as const) if (!tp[field].trim()) bad('why', `tip ${tp.id} has no "${field}" text`)
+  for (const field of ['means', 'does', 'write', 'dont'] as const) if (!tp[field].trim()) bad('reference', `tip ${tp.id} has no "${field}" text`)
 }
 const listed = Object.values(LOOKUP).flat()
-for (const id of listed) if (!tipIds.has(id)) bad('why', `the look up list names an unknown tip ${id}`)
+for (const id of listed) if (!tipIds.has(id)) bad('reference', `the look up list names an unknown tip ${id}`)
 for (const tp of TIPS) {
   const n = listed.filter(id => id === tp.id).length
-  if (n !== 1) bad('why', `tip ${tp.id} is in the look up list ${n} times`)
-  if (!LOOKUP[tp.group].includes(tp.id)) bad('why', `tip ${tp.id} is listed outside its group (${tp.group})`)
+  if (n !== 1) bad('reference', `tip ${tp.id} is in the look up list ${n} times`)
+  if (!LOOKUP[tp.group].includes(tp.id)) bad('reference', `tip ${tp.id} is listed outside its group (${tp.group})`)
 }
-if (GROUPS.map(g => g.id).join() !== Object.keys(LOOKUP).join()) bad('why', 'GROUPS and LOOKUP list different groups')
+if (GROUPS.map(g => g.id).join() !== Object.keys(LOOKUP).join()) bad('reference', 'GROUPS and LOOKUP list different groups')
 for (const t of allTasks) for (const sk of t.skills) if (!skillTip(sk)) bad(t.id, `the skill chip "${sk}" doesn't open a reference entry`)
 const usedTips = new Set<string>()
 for (const t of allTasks) {
@@ -67,10 +67,10 @@ for (const t of allTasks) {
     found.forEach(f => usedTips.add(f.tip.id))
     const covered = new Set(found.flatMap(f => f.tip.words))
     const missing = [...new Set(blankOut(sql).match(/\b[A-Z][A-Z_]+\b/g) ?? [])].filter(w => !covered.has(w))
-    if (missing.length) bad(t.id, `no why tip covers ${missing.join(', ')}`)
+    if (missing.length) bad(t.id, `no reference entry covers ${missing.join(', ')}`)
   }
 }
-console.log(`Why tips: ${usedTips.size} of ${TIPS.length} tips show up in the answers, and every SQL word in them is covered.`)
+console.log(`Reference: ${usedTips.size} of ${TIPS.length} entries show up in the answers, and every SQL word in them is covered.`)
 
 for (const track of tracks) {
   console.log(`\n${track.name}`)
