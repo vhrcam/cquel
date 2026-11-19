@@ -70,6 +70,31 @@ WHERE inv.qty_allocated > 0
 ORDER BY l.location_code;`,
     },
     {
+      id: 'sa-sync',
+      title: 'WMS vs ERP stock',
+      kind: 'query',
+      skills: ['CTE', 'FULL JOIN', 'COALESCE'],
+      learn: "To compare two lists where either side can be missing a row, use a **FULL JOIN**. It keeps the unmatched rows from both tables, with NULLs on the missing side. `COALESCE(x, 0)` turns those NULLs into 0, so you can compare and subtract.",
+      prompt: "Every morning the ERP's stock is checked against the WMS's. `erp_inventory` holds the ERP's on-hand for each SKU. Total the WMS's `qty_on_hand` per SKU (every row, any status), then list every SKU where the two numbers differ, including SKUs that only one side has.",
+      returns: 'sku, wms_qty, erp_qty, diff (wms_qty − erp_qty) · by sku',
+      tables: ['inventory', 'items', 'erp_inventory'],
+      solution: `WITH wms AS (
+  SELECT i.sku, SUM(inv.qty_on_hand) AS wms_qty
+  FROM inventory inv
+  JOIN items i ON i.item_id = inv.item_id
+  GROUP BY i.sku
+)
+SELECT COALESCE(w.sku, e.sku) AS sku,
+       COALESCE(w.wms_qty, 0) AS wms_qty,
+       COALESCE(e.qty_on_hand, 0) AS erp_qty,
+       COALESCE(w.wms_qty, 0) - COALESCE(e.qty_on_hand, 0) AS diff
+FROM wms w
+FULL JOIN erp_inventory e ON e.sku = w.sku
+WHERE COALESCE(w.wms_qty, 0) <> COALESCE(e.qty_on_hand, 0)
+ORDER BY sku;`,
+      note: "Each mismatch is a ticket. Two are the negative rows ICQA found (the ERP never goes below 0), a few are adjustments that never reached the ERP, one is a face the ERP thinks still has stock, and one is a discontinued item still sitting on a rack. Finance closes the books on the ERP's numbers, so these get fixed fast.",
+    },
+    {
       id: 'sa-fix-user',
       title: 'Ticket: turn off a login',
       kind: 'fix-data',
