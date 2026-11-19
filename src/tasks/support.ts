@@ -113,6 +113,29 @@ WHERE username = 'dwhitfield';`,
       note: "Write the WHERE first and run it as a SELECT. Only then turn it into an UPDATE. It's the oldest habit in database support.",
     },
     {
+      id: 'sa-fix-txn',
+      title: 'Ticket: try it in a transaction',
+      kind: 'fix-data',
+      skills: ['BEGIN', 'UPDATE'],
+      learn: "Wrap a change in **BEGIN** and **COMMIT**. Between them, run a SELECT to see what the UPDATE did. If it looks wrong, end with **ROLLBACK** instead of COMMIT, and nothing is saved.\n\nTry it twice: once ending in ROLLBACK to look, then again with COMMIT to keep it.",
+      prompt: "**Ticket from ICQA:** “Some stock is past its expiry date but still shows AVAILABLE, so pickers could still send it to stores. Put every AVAILABLE row with an `expiry_date` before today on HOLD.”\n\nDo it inside a transaction, and check the rows before you commit.",
+      tables: ['inventory'],
+      check: ['SELECT inv_id, inv_status FROM inventory ORDER BY inv_id'],
+      solution: `BEGIN;
+
+UPDATE inventory
+SET inv_status = 'HOLD'
+WHERE inv_status = 'AVAILABLE'
+  AND expiry_date < CURRENT_DATE;
+
+SELECT inv_id, expiry_date, inv_status
+FROM inventory
+WHERE expiry_date < CURRENT_DATE;
+
+COMMIT;`,
+      note: "In a live WMS, an open transaction holds locks on the rows it changed. Leave one open and the next RF scan that needs those rows waits for you, so COMMIT or ROLLBACK right away.",
+    },
+    {
       id: 'sa-fix-release',
       title: 'Ticket: release stranded work',
       kind: 'fix-data',

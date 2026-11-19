@@ -128,6 +128,8 @@ const wrong: [string, string, RegExp][] = [
   ['sa-fix-user', "BEGIN; UPDATE users SET active = false WHERE username = 'dwhitfield'; SELECT active FROM users WHERE username = 'dwhitfield'; ROLLBACK;", /^Rolled back/],
   ['sa-fix-user', "BEGIN; UPDATE users SET active = false WHERE username = 'dwhitfield'; COMMIT;", /^Fixed/],
   ['sa-fix-user', "BEGIN; UPDATE users SET active = false WHERE username = 'dwhitfield'; UPDATE users SET activ = false;", /nothing was changed/],
+  ['sa-fix-txn', "BEGIN; UPDATE inventory SET inv_status = 'HOLD' WHERE inv_status = 'AVAILABLE' AND expiry_date < CURRENT_DATE; SELECT inv_id, inv_status FROM inventory WHERE expiry_date < CURRENT_DATE; ROLLBACK;", /^Rolled back/],
+  ['sa-fix-txn', "UPDATE inventory SET inv_status = 'HOLD' WHERE expiry_date < CURRENT_DATE + 1;", /should have stayed the same/],
   ['rc-fix-fill', 'SELECT v.vendor_name, ROUND(SUM(pl.qty_received) * 100.0 / SUM(pl.qty_ordered), 0) AS fill_rate FROM purchase_orders po JOIN vendors v ON v.vendor_id = po.vendor_id JOIN po_lines pl ON pl.po_id = po.po_id WHERE po.status = \'CLOSED\' GROUP BY v.vendor_name ORDER BY fill_rate, v.vendor_name', /rounding|different values|wrong order/],
 ]
 console.log('\nWrong answers')
