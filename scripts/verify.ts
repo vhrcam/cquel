@@ -7,7 +7,7 @@ import { Engine } from '../src/db/engine.ts'
 import { WMS_NOW } from '../src/db/clock.ts'
 import { compareGrids } from '../src/db/compare.ts'
 import { hasTopLevelOrderBy, statements, blankOut } from '../src/db/sqltext.ts'
-import { explain, TIPS } from '../src/app/why.ts'
+import { explain, TIPS, GROUPS, LOOKUP } from '../src/app/why.ts'
 import { align, changedMask } from '../src/app/align.ts'
 import { tracks, allTasks, taskById } from '../src/tasks/index.ts'
 
@@ -41,13 +41,22 @@ const typo = align('SELEC sku FROM items;', 'SELECT sku FROM items;')
 if (typo.done || typo.errors !== 1 || typo.marks[7] !== 1) bad('align', 'a missing letter should be one error and the next word should line up again')
 if (!changedMask('a = NULL', 'a IS NULL').some(Boolean)) bad('align', 'changedMask missed a change')
 
-// Why tips: every SQL word in an answer (or a broken starting query) is explained by one of its tips.
+// The reference: every entry says what it means, what it does, how to write it and what not to do,
+// shows up exactly once in the look up list, and every SQL word in an answer (or a broken query) is covered.
 const tipIds = new Set<string>()
 for (const tp of TIPS) {
   if (tipIds.has(tp.id)) bad('why', `duplicate tip id ${tp.id}`)
   tipIds.add(tp.id)
-  if (!tp.why.trim()) bad('why', `tip ${tp.id} has no text`)
+  for (const field of ['means', 'does', 'write', 'dont'] as const) if (!tp[field].trim()) bad('why', `tip ${tp.id} has no "${field}" text`)
 }
+const listed = Object.values(LOOKUP).flat()
+for (const id of listed) if (!tipIds.has(id)) bad('why', `the look up list names an unknown tip ${id}`)
+for (const tp of TIPS) {
+  const n = listed.filter(id => id === tp.id).length
+  if (n !== 1) bad('why', `tip ${tp.id} is in the look up list ${n} times`)
+  if (!LOOKUP[tp.group].includes(tp.id)) bad('why', `tip ${tp.id} is listed outside its group (${tp.group})`)
+}
+if (GROUPS.map(g => g.id).join() !== Object.keys(LOOKUP).join()) bad('why', 'GROUPS and LOOKUP list different groups')
 const usedTips = new Set<string>()
 for (const t of allTasks) {
   for (const sql of [t.solution, t.given]) {

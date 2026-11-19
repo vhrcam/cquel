@@ -141,7 +141,7 @@ function renderWhy() {
     explained = explain(text)
     const head = '<div class="why-head">why each word is there</div>'
     panel.innerHTML = explained.found.length
-      ? head + explained.found.map(f => `<div class="tip" data-tip="${f.tip.id}"><div class="tip-label">${esc(f.tip.label)}</div><div class="tip-line">${esc(f.line)}</div><p>${inline(f.tip.why)}</p></div>`).join('')
+      ? head + explained.found.map(f => `<div class="tip" data-tip="${f.tip.id}"><div class="tip-label">${esc(f.tip.label)}</div><div class="tip-line">${esc(f.line)}</div><p>${inline(f.tip.does)}</p></div>`).join('')
       : `${head}<p class="muted">Start typing, and a tip shows up for each SQL word you use.</p>`
   }
   const on = activeTip(explained!, pos)
