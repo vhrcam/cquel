@@ -7,7 +7,7 @@ import { Engine } from '../src/db/engine.ts'
 import { WMS_NOW } from '../src/db/clock.ts'
 import { compareGrids } from '../src/db/compare.ts'
 import { hasTopLevelOrderBy, statements, blankOut } from '../src/db/sqltext.ts'
-import { explain, TIPS, GROUPS, LOOKUP } from '../src/app/why.ts'
+import { explain, skillTip, TIPS, GROUPS, LOOKUP } from '../src/app/why.ts'
 import { align, changedMask } from '../src/app/align.ts'
 import { tracks, allTasks, taskById } from '../src/tasks/index.ts'
 
@@ -57,6 +57,7 @@ for (const tp of TIPS) {
   if (!LOOKUP[tp.group].includes(tp.id)) bad('why', `tip ${tp.id} is listed outside its group (${tp.group})`)
 }
 if (GROUPS.map(g => g.id).join() !== Object.keys(LOOKUP).join()) bad('why', 'GROUPS and LOOKUP list different groups')
+for (const t of allTasks) for (const sk of t.skills) if (!skillTip(sk)) bad(t.id, `the skill chip "${sk}" doesn't open a reference entry`)
 const usedTips = new Set<string>()
 for (const t of allTasks) {
   for (const sql of [t.solution, t.given]) {

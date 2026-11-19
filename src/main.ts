@@ -5,7 +5,7 @@ import type { Prepared, Checked, RunResult } from './db/engine.ts'
 import { TraceEditor } from './app/editor.ts'
 import { WMS_CLOCK } from './db/clock.ts'
 import { esc, markup, gridHtml, runHtml, inline } from './app/render.ts'
-import { explain, activeTip, tipById, GROUPS, LOOKUP, type Explained, type Tip } from './app/why.ts'
+import { explain, activeTip, tipById, skillTip, GROUPS, LOOKUP, type Explained, type Tip } from './app/why.ts'
 import { saved, persist } from './app/store.ts'
 
 type Column = { name: string; type: string; note: string; key: string; ref: string }
@@ -102,7 +102,7 @@ function renderTask() {
     <div class="prompt">${markup(task.prompt)}</div>
     ${task.returns ? `<div class="returns"><span class="label">return</span>${esc(task.returns)}</div>` : ''}
     <div class="chips"><span class="label">tables</span>${task.tables.map(t => `<button type="button" class="chip" data-peek="${t}" aria-expanded="false">${t}</button>`).join('')}</div>
-    <div class="chips"><span class="label">skills</span>${task.skills.map(s => `<span class="chip">${esc(s)}</span>`).join('')}</div>
+    <div class="chips"><span class="label">skills</span>${task.skills.map(s => { const id = skillTip(s); return id ? `<button type="button" class="chip" data-skill="${id}" title="open it in the reference">${esc(s)}</button>` : `<span class="chip">${esc(s)}</span>` }).join('')}</div>
     <div id="peek"></div>`
 }
 
@@ -201,6 +201,19 @@ function renderLookup() {
   $('ref-list').innerHTML = html || `<p class="muted">Nothing matches “${esc(q)}”. Try a word like join, null or group.</p>`
   const few = !!q && hits.size <= 3
   for (const card of $('ref-list').querySelectorAll<HTMLElement>('.card')) showCard(card, few || lookOpen.has(card.dataset.tip!))
+}
+
+// A skill chip opens its entry in the look up tab.
+function openRefEntry(id: string) {
+  if (!refOn) setRef(true)
+  $<HTMLInputElement>('ref-search').value = ''
+  lookOpen.add(id)
+  setRefTab('all')
+  const card = $('ref-list').querySelector<HTMLElement>(`.card[data-tip="${id}"]`)
+  if (!card) return
+  card.scrollIntoView({ block: 'center' })
+  card.classList.add('flash')
+  setTimeout(() => card.classList.remove('flash'), 1400)
 }
 
 function setRefTab(tab: 'query' | 'all') {
@@ -382,6 +395,8 @@ document.querySelector('.side-tabs')!.addEventListener('click', e => {
 })
 
 $('task').addEventListener('click', e => {
+  const skill = (e.target as HTMLElement).closest<HTMLElement>('[data-skill]')
+  if (skill) return openRefEntry(skill.dataset.skill!)
   const b = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-peek]')
   if (!b) return
   const open = b.getAttribute('aria-expanded') !== 'true'

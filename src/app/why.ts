@@ -539,6 +539,20 @@ export const LOOKUP: Record<Group, string[]> = {
 
 export const tipById = new Map(TIPS.map(t => [t.id, t]))
 
+// Skill names on a task that don't match an entry's name on their own.
+const SKILL: Record<string, string> = {
+  dates: 'datemath', timestamps: 'now', expressions: 'as', division: 'divide', aliases: 'alias', ranges: 'compare',
+  'foreign keys': 'keys', CTE: 'with', 'window SUM': 'over', 'IS NULL': 'null', subquery: 'subquery',
+}
+
+// The reference entry a skill chip opens: 'NOT IN' finds NOT IN (…), 'ROW_NUMBER' finds ROW_NUMBER(), 'CASE' finds CASE WHEN.
+export function skillTip(skill: string): string | null {
+  if (SKILL[skill]) return SKILL[skill]
+  const want = skill.toUpperCase()
+  const name = (label: string) => label.replace(/\s*[(…].*$/, '').trim().toUpperCase()
+  return TIPS.find(t => name(t.label) === want)?.id ?? TIPS.find(t => t.words.includes(want))?.id ?? null
+}
+
 function closeParen(blank: string, from: number) {
   const open = blank.indexOf('(', from)
   if (open < 0) return blank.length
