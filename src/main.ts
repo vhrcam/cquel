@@ -5,7 +5,7 @@ import type { Prepared, Checked, RunResult } from './db/engine.ts'
 import { TraceEditor } from './app/editor.ts'
 import { WMS_CLOCK } from './db/clock.ts'
 import { esc, markup, gridHtml, runHtml, inline } from './app/render.ts'
-import { explain, activeTip, type Explained, type Tip } from './app/why.ts'
+import { explain, activeTip, tipById, GROUPS, LOOKUP, type Explained, type Tip } from './app/why.ts'
 import { saved, persist } from './app/store.ts'
 
 type Column = { name: string; type: string; note: string; key: string; ref: string }
@@ -29,6 +29,8 @@ let explainedText: string | null = null
 let explained: Explained | null = null
 let refFrame = 0
 const openCards = new Set<string>()
+const lookOpen = new Set<string>()
+let refTab: 'query' | 'all' = 'query'
 
 const KIND = { query: 'query', 'fix-query': 'fix the query', 'fix-data': 'ticket' }
 const progressOf = (id: string) => saved.progress[id] ?? {}
@@ -156,7 +158,7 @@ function placeRef() {
 function renderRef() {
   const panel = $('ref')
   panel.hidden = !refOn
-  if (!refOn) return
+  if (!refOn || refTab !== 'query') return
   const list = $('ref-query')
   const { text, pos } = editor.where()
   if (text !== explainedText) {
@@ -179,6 +181,34 @@ function renderRef() {
   const r = lit.getBoundingClientRect()
   if (sideways && (r.left < box.left || r.right > box.right)) list.scrollBy({ left: r.left - box.left - 8, behavior: 'smooth' })
   if (!sideways && (r.top < box.top + 40 || r.bottom > box.bottom)) panel.scrollBy({ top: r.top - box.top - 48, behavior: 'smooth' })
+}
+
+// The look up tab: every entry by group. A search matches names first, then the rest of the text.
+function renderLookup() {
+  const q = $<HTMLInputElement>('ref-search').value.trim().toLowerCase()
+  const all = GROUPS.flatMap(g => LOOKUP[g.id].map(id => tipById.get(id)!))
+  const has = (list: string[]) => list.some(x => x.toLowerCase().includes(q))
+  const named = all.filter(t => has([t.label, t.means, ...t.words]))
+  const hits = new Set(!q ? all : named.length ? named : all.filter(t => has([t.does, t.write, t.dont])))
+  const html = GROUPS.map(g => {
+    const list = LOOKUP[g.id].map(id => tipById.get(id)!).filter(t => hits.has(t))
+    return list.length ? `<section class="ref-group"><h3>${esc(g.name)}</h3>${list.map(t => cardHtml(t)).join('')}</section>` : ''
+  }).join('')
+  $('ref-list').innerHTML = html || `<p class="muted">Nothing matches “${esc(q)}”. Try a word like join, null or group.</p>`
+  const few = !!q && hits.size <= 3
+  for (const card of $('ref-list').querySelectorAll<HTMLElement>('.card')) showCard(card, few || lookOpen.has(card.dataset.tip!))
+}
+
+function setRefTab(tab: 'query' | 'all') {
+  refTab = tab
+  document.querySelectorAll<HTMLElement>('.ref-tabs [data-ref]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.ref === tab)))
+  $('ref-query').hidden = tab !== 'query'
+  $('ref-all').hidden = tab !== 'all'
+  if (tab === 'all') renderLookup()
+  else {
+    explainedText = null
+    renderRef()
+  }
 }
 
 const queueRef = () => {
@@ -373,11 +403,18 @@ $('ref').addEventListener('click', e => {
   if (!head) return
   const card = head.parentElement!
   const id = card.dataset.tip!
-  const open = !openCards.has(id)
-  if (open) openCards.add(id)
-  else openCards.delete(id)
-  showCard(card, open || card.classList.contains('on'))
+  const look = !!card.closest('#ref-all')
+  const set = look ? lookOpen : openCards
+  const open = look ? !card.classList.contains('open') : !openCards.has(id)
+  if (open) set.add(id)
+  else set.delete(id)
+  showCard(card, open || (!look && card.classList.contains('on')))
 })
+document.querySelector('.ref-tabs')!.addEventListener('click', e => {
+  const b = (e.target as HTMLElement).closest<HTMLElement>('[data-ref]')
+  if (b) setRefTab(b.dataset.ref as 'query' | 'all')
+})
+$('ref-search').addEventListener('input', renderLookup)
 refWide.addEventListener('change', placeRef)
 $('menu').addEventListener('click', () => openSide(!$('side').classList.contains('open')))
 $('scrim').addEventListener('click', () => openSide(false))

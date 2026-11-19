@@ -62,8 +62,15 @@
         </section>
       </main>
       <aside class="ref" id="ref" aria-label="SQL reference" hidden>
-        <div class="ref-head">this query</div>
+        <div class="ref-tabs" role="tablist">
+          <button type="button" role="tab" data-ref="query" aria-selected="true">this query</button>
+          <button type="button" role="tab" data-ref="all" aria-selected="false">look up</button>
+        </div>
         <div class="ref-query" id="ref-query"></div>
+        <div class="ref-all" id="ref-all" hidden>
+          <input type="search" class="ref-search" id="ref-search" placeholder="find a word: null, join, having…" aria-label="Find a SQL word" autocomplete="off" spellcheck="false" />
+          <div class="ref-list" id="ref-list"></div>
+        </div>
       </aside>
     </div>
     <script type="module" src="/src/main.ts"></script>
