@@ -145,6 +145,39 @@ GROUP BY ca.carrier_name
 ORDER BY on_time_pct, ca.carrier_name;`,
     },
     {
+      id: 'ob-fix-notin',
+      title: 'Fix: NOT IN finds nothing',
+      kind: 'fix-query',
+      skills: ['NOT IN', 'NOT EXISTS'],
+      learn: "`x NOT IN (list)` means x isn't equal to anything in the list. If the list holds a NULL, Postgres can't say x isn't equal to it, because NULL is unknown. So the answer is unknown, and the row is dropped. Every row.",
+      prompt: "The wave planner wants to know how much work is still waiting for a wave: order lines with no pick task yet, counted by `ship_by` day. The query runs, but it says nothing is waiting, and {waiting} orders are. Fix it.",
+      returns: 'ship_by, orders, lines · by ship_by',
+      tables: ['orders', 'order_lines', 'tasks'],
+      given: `SELECT o.ship_by,
+       COUNT(DISTINCT o.order_id) AS orders,
+       COUNT(*) AS lines
+FROM orders o
+JOIN order_lines ol ON ol.order_id = o.order_id
+WHERE o.status <> 'CANCELLED'
+  AND ol.order_line_id NOT IN (SELECT order_line_id FROM tasks)
+GROUP BY o.ship_by
+ORDER BY o.ship_by;`,
+      solution: `SELECT o.ship_by,
+       COUNT(DISTINCT o.order_id) AS orders,
+       COUNT(*) AS lines
+FROM orders o
+JOIN order_lines ol ON ol.order_id = o.order_id
+WHERE o.status <> 'CANCELLED'
+  AND NOT EXISTS (
+    SELECT 1
+    FROM tasks t
+    WHERE t.order_line_id = ol.order_line_id
+  )
+GROUP BY o.ship_by
+ORDER BY o.ship_by;`,
+      note: "Putaway and replen tasks have no order line, so `order_line_id` is NULL on hundreds of rows. NOT EXISTS doesn't trip over NULLs. Adding `WHERE order_line_id IS NOT NULL` inside the NOT IN works too.",
+    },
+    {
       id: 'ob-fix-ambiguous',
       title: 'Fix: ambiguous column',
       kind: 'fix-query',
