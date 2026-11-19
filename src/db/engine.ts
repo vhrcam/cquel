@@ -2,7 +2,7 @@ import type { PGlite } from '@electric-sql/pglite'
 import { schemaSql } from './schema.ts'
 import { seedSql } from './seed.ts'
 import { compareGrids, compareStates, type Grid, type Verdict } from './compare.ts'
-import { hasTopLevelOrderBy, touchesTransaction, changesData } from './sqltext.ts'
+import { hasTopLevelOrderBy, touchesTransaction, changesData, txnEnd } from './sqltext.ts'
 import type { Task } from '../tasks/types.ts'
 
 export type PgError = { message: string; detail?: string; hint?: string; position?: number }
@@ -32,6 +32,18 @@ function toError(e: unknown): PgError {
 }
 
 const lastGrid = (run: RunResult) => [...run.outputs].reverse().find(o => o.grid)?.grid ?? null
+
+// A ticket's verdict, with a word about transactions and runs that only looked.
+function ticketVerdict(run: RunResult, txn: ReturnType<typeof txnEnd>, v: Verdict): Verdict {
+  if (run.error) return { status: 'fail', message: txn === 'commit' ? 'Error: see the output below. Anything before your COMMIT was saved.' : 'Error, so nothing was changed. See the output below.' }
+  if (txn === 'open') return { status: 'fail', message: 'BEGIN with no COMMIT: nothing was saved, so it was rolled back. End with COMMIT to keep the change, or ROLLBACK to undo it.' }
+  if (v.status !== 'pending') return v
+  if (txn === 'rollback') return { status: 'pending', message: 'Rolled back, so nothing was saved. If the rows looked right, change ROLLBACK to COMMIT and run it again.' }
+  const changed = run.outputs.filter(o => changesData(o.command))
+  if (!changed.length) return { status: 'pending', message: 'You only looked, so nothing has changed yet. Now write the fix.' }
+  if (changed.every(o => o.rowCount === 0)) return { status: 'pending', message: `Not fixed yet: your ${changed[0].command} changed 0 rows. Check its WHERE against what the SELECT found.` }
+  return v
+}
 
 export class Engine {
   db: PGlite
@@ -127,9 +139,11 @@ export class Engine {
       const st = await this.statesFor(task)
       await this.db.exec('RESET ALL')
       const run = await this.exec(sql)
+      const txn = txnEnd(sql)
+      if (run.error || txn === 'open') await this.db.exec('ROLLBACK').catch(() => {})
       this.dirty = true
       const now = await this.capture(task)
-      return { run, verdict: run.error ? { status: 'fail', message: 'Error, so nothing was changed. See the output below.' } : compareStates(st.seed, st.fixed, now) }
+      return { run, verdict: ticketVerdict(run, txn, compareStates(st.seed, st.fixed, now)) }
     }
     const expected = await this.expectedFor(task)
     if (this.dirty) await this.reset()

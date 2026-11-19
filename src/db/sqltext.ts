@@ -62,6 +62,18 @@ export function touchesTransaction(sql: string): boolean {
   return statements(blankOut(sql)).some(s => TXN.test(s.trim()))
 }
 
+// How a run leaves its transaction: still open after BEGIN, committed, rolled back, or no transaction at all.
+export function txnEnd(sql: string): 'open' | 'commit' | 'rollback' | null {
+  let state: 'open' | 'commit' | 'rollback' | null = null
+  for (const st of statements(sql)) {
+    const word = blankOut(st).trim().split(/\s+/)[0].toLowerCase()
+    if (word === 'begin' || word === 'start') state = 'open'
+    else if (word === 'commit' || word === 'end') state = 'commit'
+    else if (word === 'rollback' || word === 'abort') state = 'rollback'
+  }
+  return state
+}
+
 export function changesData(command: string): boolean {
   return /^(INSERT|UPDATE|DELETE|MERGE|CREATE|DROP|ALTER|TRUNCATE|COPY|GRANT|REVOKE)/.test(command)
 }

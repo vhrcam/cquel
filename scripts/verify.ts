@@ -122,6 +122,12 @@ const wrong: [string, string, RegExp][] = [
   ['ic-fix-negative', `UPDATE inventory SET qty_on_hand = 0 WHERE inv_id = ${taskById.get('ic-fix-negative')!.solution.match(/inv_id = (\d+)/)![1]};`, /still needs? fixing/],
   ['ic-expiring', 'SELECT i.sku, inv.lot_no, l.location_code, inv.expiry_date, inv.qty_on_hand FROM inventory inv JOIN items i ON i.item_id = inv.item_id JOIN locations l ON l.location_id = inv.location_id WHERE inv.expiry_date BETWEEN CURRENT_DATE AND CURRENT_DATE + 30 ORDER BY l.location_code', /wrong order/],
   ['or-where', "SELECT zone_code, location_code FROM locations WHERE status = 'LOCKED';", /^Correct/],
+  ['sa-fix-user', "SELECT user_id, active FROM users WHERE username = 'dwhitfield';", /only looked/],
+  ['sa-fix-user', "UPDATE users SET active = false WHERE username = 'dwhitfeld';", /changed 0 rows/],
+  ['sa-fix-user', "BEGIN; UPDATE users SET active = false WHERE username = 'dwhitfield';", /BEGIN with no COMMIT/],
+  ['sa-fix-user', "BEGIN; UPDATE users SET active = false WHERE username = 'dwhitfield'; SELECT active FROM users WHERE username = 'dwhitfield'; ROLLBACK;", /^Rolled back/],
+  ['sa-fix-user', "BEGIN; UPDATE users SET active = false WHERE username = 'dwhitfield'; COMMIT;", /^Fixed/],
+  ['sa-fix-user', "BEGIN; UPDATE users SET active = false WHERE username = 'dwhitfield'; UPDATE users SET activ = false;", /nothing was changed/],
   ['rc-fix-fill', 'SELECT v.vendor_name, ROUND(SUM(pl.qty_received) * 100.0 / SUM(pl.qty_ordered), 0) AS fill_rate FROM purchase_orders po JOIN vendors v ON v.vendor_id = po.vendor_id JOIN po_lines pl ON pl.po_id = po.po_id WHERE po.status = \'CLOSED\' GROUP BY v.vendor_name ORDER BY fill_rate, v.vendor_name', /rounding|different values|wrong order/],
 ]
 console.log('\nWrong answers')
