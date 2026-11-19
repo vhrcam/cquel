@@ -97,6 +97,7 @@ check(/rows, expected 8/.test(s), 'an off-by-one date range says how many rows a
 
 // 4. a ticket: an UPDATE with no WHERE gets caught, reset puts it back, the right fix passes
 await openTask('sa-fix-user')
+check((await page.$('#ref-query .card[data-tip="h-look"] .card-tag')) !== null, 'a ticket pins the look before you change habit')
 await page.waitForFunction(() => !document.querySelector('#status')!.textContent!.startsWith('running'), { timeout: 15000 })
 await clearEditor()
 await page.keyboard.type('update users set active = false', { delay: 0 })

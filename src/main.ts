@@ -135,8 +135,11 @@ function loadEditor() {
 
 const refWide = matchMedia('(min-width: 1280px)')
 
-function cardHtml(t: Tip, line?: string) {
-  return `<div class="card" data-tip="${t.id}"><button type="button" class="card-head" aria-expanded="false"><span class="card-label">${esc(t.label)}</span><span class="card-means">${esc(t.means)}</span>${line ? `<span class="card-line">${esc(line)}</span>` : ''}</button><dl class="card-body"><dt>does</dt><dd>${inline(t.does)}</dd><dt>write</dt><dd><code>${esc(t.write)}</code></dd><dt class="dont">don't</dt><dd>${inline(t.dont)}</dd></dl></div>`
+// A habit that fits the kind of task sits at the top of "this query".
+const PIN: Partial<Record<Task['kind'], string>> = { 'fix-data': 'h-look', 'fix-query': 'h-error' }
+
+function cardHtml(t: Tip, line?: string, tag?: string) {
+  return `<div class="card" data-tip="${t.id}"><button type="button" class="card-head" aria-expanded="false"><span class="card-label">${esc(t.label)}${tag ? `<span class="card-tag">${tag}</span>` : ''}</span><span class="card-means">${esc(t.means)}</span>${line ? `<span class="card-line">${esc(line)}</span>` : ''}</button><dl class="card-body"><dt>does</dt><dd>${inline(t.does)}</dd><dt>write</dt><dd><code>${esc(t.write)}</code></dd><dt class="dont">don't</dt><dd>${inline(t.dont)}</dd></dl></div>`
 }
 
 function showCard(card: HTMLElement, open: boolean) {
@@ -164,9 +167,10 @@ function renderRef() {
   if (text !== explainedText) {
     explainedText = text
     explained = explain(text)
-    list.innerHTML = explained.found.length
+    const pin = PIN[task.kind]
+    list.innerHTML = (pin ? cardHtml(tipById.get(pin)!, undefined, 'habit') : '') + (explained.found.length
       ? explained.found.map(f => cardHtml(f.tip, f.line)).join('')
-      : '<p class="muted">Start typing. Every SQL word you use gets a card here: what it means, what it does, how to write it, and what not to do.</p>'
+      : '<p class="muted">Start typing. Every SQL word you use gets a card here: what it means, what it does, how to write it, and what not to do.</p>')
   }
   const on = activeTip(explained!, pos)
   for (const card of list.querySelectorAll<HTMLElement>('.card')) {
