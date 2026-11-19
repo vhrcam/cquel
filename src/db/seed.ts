@@ -870,12 +870,17 @@ function build() {
   }
 
   // ---------- transactions
+  // Picks of lot-controlled items record the lot they took. The recalled lot sat in its pick face until Nov 4.
+  const RECALL_LOT = 'L260915B'
+  const recallSwitch = T0 - 6 * DAY
+  const faceLot = new Map(faces.map(f => [f.item, inv.find(r => r.loc === f.loc)?.lot ?? null]))
+  const pickLot = (t: Task) => (!t.item.lot ? null : t.item === recall && t.completed! < recallSwitch ? RECALL_LOT : faceLot.get(t.item) ?? null)
   const txns: Txn[] = [...adjusts]
   for (const r of receipts) txns.push({ type: 'RECEIVE', item: r.line.item, loc: r.door, lot: r.lot, qty: r.qty, reason: null, ref: r.line.po.no, user: r.by, at: r.at })
   for (const t of tasks) {
     if (t.type === 'PUTAWAY' && t.status === 'DONE') txns.push({ type: 'PUTAWAY', item: t.item, loc: t.to, lot: t.receipt!.lot, qty: t.qty, reason: null, ref: t.receipt!.lpn, user: t.user, at: t.completed! })
     if (t.type === 'REPLEN' && t.status === 'DONE') txns.push({ type: 'REPLEN', item: t.item, loc: t.to, lot: null, qty: t.qty, reason: null, ref: null, user: t.user, at: t.completed! })
-    if (t.type === 'PICK' && finished(t) && t.done > 0) txns.push({ type: 'PICK', item: t.item, loc: t.from, lot: null, qty: -t.done, reason: null, ref: t.line!.order.no, user: t.user, at: t.completed! })
+    if (t.type === 'PICK' && finished(t) && t.done > 0) txns.push({ type: 'PICK', item: t.item, loc: t.from, lot: pickLot(t), qty: -t.done, reason: null, ref: t.line!.order.no, user: t.user, at: t.completed! })
   }
   txns.sort((a, b) => a.at - b.at || a.item.id - b.item.id)
 
