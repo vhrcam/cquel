@@ -118,6 +118,26 @@ GROUP BY reason_code
 ORDER BY net_units;`,
     },
     {
+      id: 'ic-shrink',
+      title: 'Shrink in dollars',
+      kind: 'query',
+      skills: ['JOIN', 'SUM'],
+      learn: "SUM can add up a calculation, not just a column. `SUM(x.qty * i.unit_cost)` multiplies each row's units by that item's cost, then adds up the results.",
+      prompt: "Finance counts money, not units. For the same 7 days of adjustments (`txn_type` 'ADJUST', `created_at` on or after Nov 3), show each reason's net units and what they're worth: `qty` times the item's `unit_cost`.",
+      returns: 'reason_code, net_units, net_value · biggest loss first (lowest net_value)',
+      tables: ['inventory_txns', 'items'],
+      solution: `SELECT x.reason_code,
+       SUM(x.qty) AS net_units,
+       SUM(x.qty * i.unit_cost) AS net_value
+FROM inventory_txns x
+JOIN items i ON i.item_id = x.item_id
+WHERE x.txn_type = 'ADJUST'
+  AND x.created_at >= CURRENT_DATE - 7
+GROUP BY x.reason_code
+ORDER BY net_value;`,
+      note: "Shrink is the warehouse word for stock that's lost: damaged, expired, missing or stolen. Ten missing phone chargers cost more than ten missing bags of chips, so ICQA reports both numbers.",
+    },
+    {
       id: 'ic-overdue',
       title: 'Overdue counts',
       kind: 'query',
