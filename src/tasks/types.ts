@@ -7,6 +7,7 @@ export type Task = {
   title: string
   kind: Kind
   skills: string[]
+  learn?: string
   prompt: string
   returns?: string
   tables: string[]

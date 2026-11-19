@@ -25,7 +25,7 @@ const ids = new Set<string>()
 for (const t of allTasks) {
   if (ids.has(t.id)) bad(t.id, 'duplicate id')
   ids.add(t.id)
-  if (/\{\w+\}/.test(t.prompt + t.solution + (t.given ?? ''))) bad(t.id, 'unfilled {placeholder}')
+  if (/\{\w+\}/.test(t.prompt + t.solution + (t.given ?? '') + (t.learn ?? ''))) bad(t.id, 'unfilled {placeholder}')
 }
 
 // Tracing: the answer traced exactly, in lower case and with other line breaks all count as done.

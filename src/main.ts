@@ -99,6 +99,7 @@ function renderTask() {
     <div class="eyebrow"><span>${esc(tr.name)} · ${n}/${tr.tasks.length}</span><span class="kind">${KIND[task.kind]}</span></div>
     <h1>${esc(task.title)}</h1>
     <p class="role">${esc(tr.role)}</p>
+    ${task.learn ? `<div class="learn"><div class="learn-head">learn</div>${markup(task.learn)}</div>` : ''}
     <div class="prompt">${markup(task.prompt)}</div>
     ${task.returns ? `<div class="returns"><span class="label">return</span>${esc(task.returns)}</div>` : ''}
     <div class="chips"><span class="label">tables</span>${task.tables.map(t => `<button type="button" class="chip" data-peek="${t}" aria-expanded="false">${t}</button>`).join('')}</div>

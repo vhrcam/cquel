@@ -10,6 +10,7 @@ import { support } from './support.ts'
 const prep = (t: Task): Task => ({
   ...t,
   prompt: fill(t.prompt),
+  learn: t.learn && fill(t.learn),
   solution: fill(t.solution),
   given: t.given && fill(t.given),
   returns: t.returns && fill(t.returns),
