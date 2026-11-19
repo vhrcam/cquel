@@ -987,5 +987,8 @@ function build() {
     reslotSku: reslot.sku, reslotFrom: far.code,
     borrowed: borrowed.length,
     stuck: stuck.map(o => o.no).join(', '),
+    w2Orders: orders.filter(o => o.wave === W(0, 2)).length,
+    w2Lines: orders.filter(o => o.wave === W(0, 2)).reduce((n, o) => n + o.lines.length, 0),
+    waiting: orders.filter(o => o.status === 'NEW').length,
   }
 }

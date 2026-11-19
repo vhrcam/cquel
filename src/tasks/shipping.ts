@@ -95,6 +95,37 @@ ORDER BY w.wave_no;`,
       note: "`COUNT(*) FILTER (WHERE ...)` counts some of the rows inside a group. The version that works in every database is `SUM(CASE WHEN ... THEN 1 ELSE 0 END)`.",
     },
     {
+      id: 'ob-fix-count',
+      title: 'Fix: too many orders',
+      kind: 'fix-query',
+      skills: ['COUNT', 'DISTINCT'],
+      learn: "A JOIN repeats each order once for every line it has. That's what you want for adding up line quantities. It also means a single order now sits on several rows.",
+      prompt: "The wave summary says W1110-2 has {w2Lines} orders, but the wave screen shows {w2Orders}. Fix the orders count. The lines and units are already right.",
+      returns: 'wave_no, orders, lines, units · by wave_no',
+      tables: ['waves', 'orders', 'order_lines'],
+      given: `SELECT w.wave_no,
+       COUNT(*) AS orders,
+       COUNT(*) AS lines,
+       SUM(ol.qty_ordered) AS units
+FROM waves w
+JOIN orders o ON o.wave_id = w.wave_id
+JOIN order_lines ol ON ol.order_id = o.order_id
+WHERE w.released_at >= CURRENT_DATE
+GROUP BY w.wave_no
+ORDER BY w.wave_no;`,
+      solution: `SELECT w.wave_no,
+       COUNT(DISTINCT o.order_id) AS orders,
+       COUNT(*) AS lines,
+       SUM(ol.qty_ordered) AS units
+FROM waves w
+JOIN orders o ON o.wave_id = w.wave_id
+JOIN order_lines ol ON ol.order_id = o.order_id
+WHERE w.released_at >= CURRENT_DATE
+GROUP BY w.wave_no
+ORDER BY w.wave_no;`,
+      note: "When a total looks too big after a JOIN, check whether the join repeated rows. For a count of the parent rows, `COUNT(DISTINCT …)` is the quick fix.",
+    },
+    {
       id: 'ob-ontime',
       title: 'On-time by carrier',
       kind: 'query',
