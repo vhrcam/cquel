@@ -15,8 +15,8 @@
       <div class="top-right">
         <span class="clock" id="clock" title="Eastern Time"></span>
         <label class="switch">
-          <span class="switch-label">why</span>
-          <button type="button" role="switch" id="why-switch" aria-checked="false" aria-label="Why tips"></button>
+          <span class="switch-label">ref<span class="long">erence</span></span>
+          <button type="button" role="switch" id="ref-switch" aria-checked="true" aria-label="Reference"></button>
         </label>
         <label class="switch">
           <span class="switch-label"><span class="long">transparent </span>letters</span>
@@ -42,7 +42,6 @@
             <div class="ed" id="editor"></div>
             <div class="hint" id="hint"></div>
           </div>
-          <aside class="why" id="why" aria-label="Why each word is there" hidden></aside>
         </div>
         <div class="actions">
           <button type="button" class="btn primary" id="run">run <kbd>⌘↵</kbd></button>
@@ -62,6 +61,10 @@
           <div class="out-body" id="out-body"></div>
         </section>
       </main>
+      <aside class="ref" id="ref" aria-label="SQL reference" hidden>
+        <div class="ref-head">this query</div>
+        <div class="ref-query" id="ref-query"></div>
+      </aside>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>

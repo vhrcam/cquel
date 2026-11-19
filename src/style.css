@@ -234,19 +234,33 @@ button.chip:hover, button.chip[aria-expanded='true'] { color: var(--green); bord
 
 .hint { color: var(--faint); font-size: 12px; margin: 8px 2px 0; min-height: 1.6em; }
 
-/* why tips */
 .bench { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; margin: 18px 0 0; }
-.main > .bench.with-why { max-width: 1260px; grid-template-columns: minmax(0, 1fr) 280px; gap: 14px; }
 .bench .ed { margin: 0; }
-.why { display: flex; flex-direction: column; gap: 8px; align-self: start; }
-.why[hidden] { display: none; }
-.why-head { color: var(--muted); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; position: sticky; top: 0; z-index: 1; background: var(--bg); padding-bottom: 4px; }
-.bench.with-why .why { position: sticky; top: 16px; max-height: calc(100vh - 84px); max-height: calc(100dvh - 84px); overflow-y: auto; }
-.tip { border: 1px solid var(--line); border-radius: 6px; background: var(--panel); padding: 9px 12px 10px; transition: border-color 0.15s, background 0.15s; }
-.tip.on { border-color: var(--green); background: rgba(40, 254, 20, 0.07); }
-.tip-label { color: var(--green); font-weight: 600; font-size: 13px; white-space: pre; }
-.tip-line { color: var(--faint); font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 1px 0 5px; }
-.tip p { margin: 0; font-size: 12.5px; line-height: 1.55; }
+
+/* reference: a column on the right of wide screens, a row under the editor on smaller ones */
+.app.with-ref { grid-template-columns: 290px minmax(0, 1fr) clamp(300px, 24vw, 380px); }
+.ref[hidden] { display: none; }
+.app > .ref { border-left: 1px solid var(--line); overflow-y: auto; padding: 0 14px 32px; }
+.ref-head { position: sticky; top: 0; z-index: 1; background: var(--bg); color: var(--muted); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; padding: 14px 2px 8px; }
+.ref-query { display: flex; flex-direction: column; gap: 8px; }
+.ref .muted { font-size: 12.5px; margin: 4px 2px; }
+.card { border: 1px solid var(--line); border-radius: 6px; background: var(--panel); transition: border-color 0.15s, background 0.15s; }
+.card.on { border-color: var(--green); background: rgba(40, 254, 20, 0.07); }
+.card-head { display: grid; gap: 1px; width: 100%; padding: 8px 12px; background: none; border: 0; text-align: left; cursor: pointer; }
+.card-label { color: var(--green); font-weight: 600; font-size: 13px; white-space: pre; }
+.card-means { color: var(--prose); font-size: 12.5px; }
+.card-line { color: var(--faint); font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.card-body { display: none; grid-template-columns: 3.4em minmax(0, 1fr); gap: 5px 8px; margin: 0; padding: 2px 12px 11px; font-size: 12.5px; line-height: 1.55; }
+.card.open .card-body { display: grid; }
+.card-body dt { color: var(--muted); }
+.card-body dt.dont { color: var(--red); }
+.card-body dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.card-body code { white-space: pre-wrap; }
+.bench .ref-head { position: static; padding: 0 2px 6px; }
+.bench .ref-query { flex-direction: row; overflow-x: auto; gap: 10px; padding-bottom: 6px; scroll-snap-type: x proximity; }
+.bench .card { flex: 0 0 min(280px, 80vw); scroll-snap-align: start; }
+.bench .card-body { display: grid; }
+.bench .card-head { cursor: default; }
 
 .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 14px 0 0; }
 .btn {
@@ -300,16 +314,7 @@ tr:last-child td { border-bottom: 0; }
 
 .scrim { display: none; }
 
-@media (min-width: 1181px) {
-  .bench.with-why .ed-layer, .bench.with-why .ed-input { font-size: 14px; }
-}
-
-@media (max-width: 1180px) {
-  .main > .bench.with-why { grid-template-columns: minmax(0, 1fr); }
-  .bench.with-why .why { position: static; max-height: none; display: grid; grid-auto-flow: column; grid-auto-columns: min(260px, 78vw); gap: 10px; overflow-x: auto; overflow-y: hidden; padding-bottom: 6px; scroll-snap-type: x proximity; }
-  .bench.with-why .why-head { display: none; }
-  .tip { scroll-snap-align: start; }
-}
+.app.with-ref .ed-layer, .app.with-ref .ed-input { font-size: 14px; }
 
 @media (max-width: 860px) {
   .app { grid-template-columns: minmax(0, 1fr); }

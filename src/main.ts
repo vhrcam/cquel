@@ -5,7 +5,7 @@ import type { Prepared, Checked, RunResult } from './db/engine.ts'
 import { TraceEditor } from './app/editor.ts'
 import { WMS_CLOCK } from './db/clock.ts'
 import { esc, markup, gridHtml, runHtml, inline } from './app/render.ts'
-import { explain, activeTip, type Explained } from './app/why.ts'
+import { explain, activeTip, type Explained, type Tip } from './app/why.ts'
 import { saved, persist } from './app/store.ts'
 
 type Column = { name: string; type: string; note: string; key: string; ref: string }
@@ -24,10 +24,11 @@ let lastSql = ''
 let lastRun: Checked | null = null
 let outTab: 'output' | 'expected' = 'output'
 let starting = true
-let whyOn = saved.why ?? false
+let refOn = saved.ref ?? true
 let explainedText: string | null = null
 let explained: Explained | null = null
-let whyFrame = 0
+let refFrame = 0
+const openCards = new Set<string>()
 
 const KIND = { query: 'query', 'fix-query': 'fix the query', 'fix-data': 'ticket' }
 const progressOf = (id: string) => saved.progress[id] ?? {}
@@ -125,50 +126,72 @@ function loadEditor() {
     ? `type over the transparent letters · it runs when you finish${task.kind === 'fix-query' ? ' · underlined letters are the fix' : ''}`
     : `letters off: write it from memory · ${RUN_HOW}`
   explainedText = null
-  renderWhy()
+  renderRef()
 }
 
-// ---------- why tips
+// ---------- reference
 
-function renderWhy() {
-  $('bench').classList.toggle('with-why', whyOn)
-  const panel = $('why')
-  panel.hidden = !whyOn
-  if (!whyOn) return
+const refWide = matchMedia('(min-width: 1280px)')
+
+function cardHtml(t: Tip, line?: string) {
+  return `<div class="card" data-tip="${t.id}"><button type="button" class="card-head" aria-expanded="false"><span class="card-label">${esc(t.label)}</span><span class="card-means">${esc(t.means)}</span>${line ? `<span class="card-line">${esc(line)}</span>` : ''}</button><dl class="card-body"><dt>does</dt><dd>${inline(t.does)}</dd><dt>write</dt><dd><code>${esc(t.write)}</code></dd><dt class="dont">don't</dt><dd>${inline(t.dont)}</dd></dl></div>`
+}
+
+function showCard(card: HTMLElement, open: boolean) {
+  card.classList.toggle('open', open)
+  card.querySelector('.card-head')!.setAttribute('aria-expanded', String(open))
+}
+
+// On a wide screen the reference is a column on the right. On a smaller one it sits under the editor.
+function placeRef() {
+  const ref = $('ref')
+  const home = refWide.matches ? document.querySelector<HTMLElement>('.app')! : $('bench')
+  if (ref.parentElement !== home) home.append(ref)
+  document.querySelector('.app')!.classList.toggle('with-ref', refOn && refWide.matches)
+  $('bench').classList.toggle('with-ref', refOn && !refWide.matches)
+  explainedText = null
+  renderRef()
+}
+
+function renderRef() {
+  const panel = $('ref')
+  panel.hidden = !refOn
+  if (!refOn) return
+  const list = $('ref-query')
   const { text, pos } = editor.where()
   if (text !== explainedText) {
     explainedText = text
     explained = explain(text)
-    const head = '<div class="why-head">why each word is there</div>'
-    panel.innerHTML = explained.found.length
-      ? head + explained.found.map(f => `<div class="tip" data-tip="${f.tip.id}"><div class="tip-label">${esc(f.tip.label)}</div><div class="tip-line">${esc(f.line)}</div><p>${inline(f.tip.does)}</p></div>`).join('')
-      : `${head}<p class="muted">Start typing, and a tip shows up for each SQL word you use.</p>`
+    list.innerHTML = explained.found.length
+      ? explained.found.map(f => cardHtml(f.tip, f.line)).join('')
+      : '<p class="muted">Start typing. Every SQL word you use gets a card here: what it means, what it does, how to write it, and what not to do.</p>'
   }
   const on = activeTip(explained!, pos)
-  const box = panel.getBoundingClientRect()
-  const sideways = panel.scrollWidth > panel.clientWidth + 1
-  for (const card of panel.querySelectorAll<HTMLElement>('.tip')) {
+  for (const card of list.querySelectorAll<HTMLElement>('.card')) {
     const hit = card.dataset.tip === on?.id
     card.classList.toggle('on', hit)
-    if (!hit) continue
-    const r = card.getBoundingClientRect()
-    if (sideways && (r.left < box.left || r.right > box.right)) panel.scrollBy({ left: r.left - box.left - 8, behavior: 'smooth' })
-    if (!sideways && (r.top < box.top + 24 || r.bottom > box.bottom)) panel.scrollBy({ top: r.top - box.top - 28, behavior: 'smooth' })
+    showCard(card, hit || openCards.has(card.dataset.tip!))
   }
+  const lit = list.querySelector<HTMLElement>('.card.on')
+  if (!lit) return
+  const sideways = !refWide.matches
+  const box = (sideways ? list : panel).getBoundingClientRect()
+  const r = lit.getBoundingClientRect()
+  if (sideways && (r.left < box.left || r.right > box.right)) list.scrollBy({ left: r.left - box.left - 8, behavior: 'smooth' })
+  if (!sideways && (r.top < box.top + 40 || r.bottom > box.bottom)) panel.scrollBy({ top: r.top - box.top - 48, behavior: 'smooth' })
 }
 
-const queueWhy = () => {
-  cancelAnimationFrame(whyFrame)
-  whyFrame = requestAnimationFrame(renderWhy)
+const queueRef = () => {
+  cancelAnimationFrame(refFrame)
+  refFrame = requestAnimationFrame(renderRef)
 }
 
-function setWhy(on: boolean) {
-  whyOn = on
-  saved.why = on
+function setRef(on: boolean) {
+  refOn = on
+  saved.ref = on
   persist()
-  $('why-switch').setAttribute('aria-checked', String(on))
-  explainedText = null
-  renderWhy()
+  $('ref-switch').setAttribute('aria-checked', String(on))
+  placeRef()
   if (!narrow()) editor.focus()
 }
 
@@ -217,6 +240,7 @@ function openTask(t: Task) {
   lastRun = null
   lastSql = ''
   outTab = 'output'
+  openCards.clear()
   renderTasks()
   renderTask()
   loadEditor()
@@ -302,7 +326,7 @@ editor.onInput = v => {
 editor.onComplete = () => run()
 editor.onRun = () => run()
 editor.onPasteBlocked = () => setStatus('pending', 'Paste is off while the letters are on. Tracing works by typing.')
-editor.onCaret = queueWhy
+editor.onCaret = queueRef
 
 $('tasklist').addEventListener('click', e => {
   const el = (e.target as HTMLElement).closest<HTMLElement>('[data-task], [data-track]')
@@ -343,7 +367,18 @@ $('out').addEventListener('click', e => {
 $('run').addEventListener('click', () => run())
 $('reset').addEventListener('click', () => resetDb())
 $('ghost').addEventListener('click', () => setGhost(!ghost))
-$('why-switch').addEventListener('click', () => setWhy(!whyOn))
+$('ref-switch').addEventListener('click', () => setRef(!refOn))
+$('ref').addEventListener('click', e => {
+  const head = (e.target as HTMLElement).closest<HTMLElement>('.card-head')
+  if (!head) return
+  const card = head.parentElement!
+  const id = card.dataset.tip!
+  const open = !openCards.has(id)
+  if (open) openCards.add(id)
+  else openCards.delete(id)
+  showCard(card, open || card.classList.contains('on'))
+})
+refWide.addEventListener('change', placeRef)
 $('menu').addEventListener('click', () => openSide(!$('side').classList.contains('open')))
 $('scrim').addEventListener('click', () => openSide(false))
 const step = (d: number) => {
@@ -372,8 +407,9 @@ const tick = () => {
 tick()
 document.querySelector('#run kbd')!.textContent = RUN_KEY
 $('ghost').setAttribute('aria-checked', String(ghost))
-$('why-switch').setAttribute('aria-checked', String(whyOn))
+$('ref-switch').setAttribute('aria-checked', String(refOn))
 openTask(task)
+placeRef()
 setStatus('', 'starting Postgres…')
 db.ready.then(() => {
   starting = false
