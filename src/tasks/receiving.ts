@@ -96,6 +96,28 @@ WHERE po.status = 'CLOSED'
 ORDER BY short_by DESC, po.po_no;`,
     },
     {
+      id: 'rc-empty',
+      title: 'Empty spots for heavy pallets',
+      kind: 'query',
+      skills: ['NOT EXISTS'],
+      learn: "To find rows with **no** match in another table, put a subquery inside `NOT EXISTS (…)`. For each location, it checks whether `inventory` has a row there, and keeps the location when there's none.",
+      prompt: "A truck of water and cat litter just came in, and heavy pallets go on the floor level (`level` 'A'). Find spots for them: reserve locations (zone `RSV`) on level A that are ACTIVE and have no row in `inventory`.",
+      returns: 'location_code, aisle, bay · by location_code',
+      tables: ['locations', 'inventory'],
+      solution: `SELECT l.location_code, l.aisle, l.bay
+FROM locations l
+WHERE l.zone_code = 'RSV'
+  AND l.level = 'A'
+  AND l.status = 'ACTIVE'
+  AND NOT EXISTS (
+    SELECT 1
+    FROM inventory inv
+    WHERE inv.location_id = l.location_id
+  )
+ORDER BY l.location_code;`,
+      note: "A WMS suggests putaway spots with rules like these: the right zone, the right level for the weight, empty, and not locked.",
+    },
+    {
       id: 'rc-backlog',
       title: 'Putaway backlog',
       kind: 'query',
