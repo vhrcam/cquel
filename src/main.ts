@@ -184,8 +184,9 @@ function renderRef() {
   const sideways = !refWide.matches
   const box = (sideways ? list : panel).getBoundingClientRect()
   const r = lit.getBoundingClientRect()
-  if (sideways && (r.left < box.left || r.right > box.right)) list.scrollBy({ left: r.left - box.left - 8, behavior: 'smooth' })
-  if (!sideways && (r.top < box.top + 40 || r.bottom > box.bottom)) panel.scrollBy({ top: r.top - box.top - 48, behavior: 'smooth' })
+  // Scroll to a fixed spot (not by an amount), so quick typing can't stack scrolls and overshoot.
+  if (sideways && (r.left < box.left || r.right > box.right)) list.scrollTo({ left: list.scrollLeft + r.left - box.left - 8, behavior: 'smooth' })
+  if (!sideways && (r.top < box.top + 40 || r.bottom > box.bottom)) panel.scrollTo({ top: panel.scrollTop + r.top - box.top - 48, behavior: 'smooth' })
 }
 
 // The look up tab: every entry by group. A search matches names first, then the rest of the text.
