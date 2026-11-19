@@ -929,6 +929,20 @@ function build() {
   ;[0, 1].forEach(k => msgs.push({ dir: 'IN', type: 'PO', ref: `PO-${4509901 + k}`, status: 'ERROR', err: 'Unknown vendor 19', created: T0 - 3 * DAY + (510 + k) * MIN, processed: null }))
   msgs.sort((a, b) => a.created - b.created || a.ref.localeCompare(b.ref))
 
+  // ---------- ERP stock
+  // The ERP's count per SKU matches the WMS total, except where something went wrong: a negative WMS row
+  // (the ERP never went below 0), adjustments that never reached it, stock it still thinks sits in an
+  // empty face, and a discontinued item it already dropped (10603 is inactive, so it's left out).
+  const rowsOf = (it: Item) => inv.filter(r => r.item === it)
+  const erp = new Map<Item, number>()
+  for (const it of items) if (it.active) erp.set(it, rowsOf(it).reduce((n, r) => n + Math.max(0, r.qty), 0))
+  const steady = items
+    .filter(it => it.active && rowsOf(it).length > 0 && rowsOf(it).every(r => r.qty >= 0) && !keepOut.has(it.sku) && it !== reslot)
+    .sort((a, b) => a.sku.localeCompare(b.sku))
+  for (const [k, cases] of [[7, 1], [23, 1], [41, 2], [56, -1]]) erp.set(steady[k], erp.get(steady[k])! + cases * steady[k].caseQty)
+  const ghostFace = empty.find(f => rowsOf(f.item).length === 0)
+  if (ghostFace) erp.set(ghostFace.item, ghostFace.item.caseQty * 2)
+
   // ---------- SQL
   const q = (v: unknown): string => v === null || v === undefined ? 'NULL' : typeof v === 'number' || typeof v === 'boolean' ? String(v) : `'${String(v).replace(/'/g, "''")}'`
   const out: string[] = []
@@ -957,6 +971,7 @@ function build() {
   insert('cycle_counts', 'count_id, location_id, item_id, status, system_qty, counted_qty, counted_by, created_at, counted_at', counts.map((c, i) => [i + 1, c.loc.id, c.item.id, c.status, c.system, c.counted, c.by, ts(c.created), ts(c.at)]))
   insert('inventory_txns', 'txn_id, txn_type, item_id, location_id, lot_no, qty, reason_code, ref_no, user_id, created_at', txns.map((x, i) => [i + 1, x.type, x.item.id, x.loc, x.lot, x.qty, x.reason, x.ref, x.user, ts(x.at)]))
   insert('host_messages', 'msg_id, direction, msg_type, ref_no, status, error_text, created_at, processed_at', msgs.map((m, i) => [880001 + i, m.dir, m.type, m.ref, m.status, m.err, ts(m.created), ts(m.processed)]))
+  insert('erp_inventory', 'sku, qty_on_hand', [...erp].sort((a, b) => a[0].sku.localeCompare(b[0].sku)).map(([it, n]) => [it.sku, n]))
   for (const [table, col] of [['inventory', 'inv_id'], ['tasks', 'task_id'], ['cycle_counts', 'count_id'], ['inventory_txns', 'txn_id']]) {
     out.push(`SELECT setval(pg_get_serial_sequence('${table}', '${col}'), (SELECT max(${col}) FROM ${table}));`)
   }

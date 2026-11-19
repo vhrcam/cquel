@@ -6,7 +6,7 @@ import { taskById } from '../tasks/index.ts'
 
 type Req = { id: number; type: 'schema' | 'prepare' | 'run' | 'reset'; taskId?: string; sql?: string }
 
-const TABLES = ['zones', 'locations', 'items', 'vendors', 'customers', 'carriers', 'users', 'inventory', 'pick_faces', 'purchase_orders', 'po_lines', 'receipts', 'waves', 'orders', 'order_lines', 'tasks', 'cycle_counts', 'inventory_txns', 'host_messages']
+const TABLES = ['zones', 'locations', 'items', 'vendors', 'customers', 'carriers', 'users', 'inventory', 'pick_faces', 'purchase_orders', 'po_lines', 'receipts', 'waves', 'orders', 'order_lines', 'tasks', 'cycle_counts', 'inventory_txns', 'host_messages', 'erp_inventory']
 
 const started = (async () => {
   const db = await PGlite.create()

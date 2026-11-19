@@ -258,4 +258,12 @@ CREATE TABLE host_messages (
 COMMENT ON TABLE host_messages IS 'Interface log between the ERP (the company''s main business system) and the WMS. Kept for 7 days.';
 COMMENT ON COLUMN host_messages.direction IS 'IN = ERP to WMS, OUT = WMS to ERP';
 COMMENT ON COLUMN host_messages.msg_type IS 'ORDER, PO, ITEM, SHIP_CONFIRM or RECEIPT_CONFIRM';
+
+CREATE TABLE erp_inventory (
+  sku         text PRIMARY KEY,
+  qty_on_hand integer NOT NULL
+);
+COMMENT ON TABLE erp_inventory IS 'The ERP''s on-hand count for each SKU. The WMS keeps it in step by sending a message for every receipt, shipment and adjustment, so each number should match the WMS total for that SKU.';
+COMMENT ON COLUMN erp_inventory.sku IS 'The item number as text. The ERP keeps its own item list, so this isn''t a foreign key';
+COMMENT ON COLUMN erp_inventory.qty_on_hand IS 'Units the ERP thinks are in the building, in any status';
 `
