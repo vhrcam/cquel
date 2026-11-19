@@ -138,6 +138,26 @@ ORDER BY net_value;`,
       note: "Shrink is the warehouse word for stock that's lost: damaged, expired, missing or stolen. Ten missing phone chargers cost more than ten missing bags of chips, so ICQA reports both numbers.",
     },
     {
+      id: 'ic-accuracy',
+      title: 'Count accuracy',
+      kind: 'query',
+      skills: ['FILTER', 'ROUND'],
+      learn: "A percent is part ÷ whole × 100. `COUNT(*) FILTER (WHERE …)` counts only the rows that pass a test, so it gives you the part, and plain `COUNT(*)` gives the whole. Write `100.0` with the decimal point, so the division keeps its decimals.",
+      prompt: "Inventory accuracy is the share of counts that matched the system exactly. For counts made in the last 30 days (`counted_at` on or after Oct 11), show each pick aisle's number of counts, how many matched (`counted_qty` = `system_qty`), and the percent.",
+      returns: 'aisle, counts, exact, accuracy_pct (1 decimal) · by aisle',
+      tables: ['cycle_counts', 'locations'],
+      solution: `SELECT l.aisle,
+       COUNT(*) AS counts,
+       COUNT(*) FILTER (WHERE cc.counted_qty = cc.system_qty) AS exact,
+       ROUND(100.0 * COUNT(*) FILTER (WHERE cc.counted_qty = cc.system_qty) / COUNT(*), 1) AS accuracy_pct
+FROM cycle_counts cc
+JOIN locations l ON l.location_id = cc.location_id
+WHERE cc.counted_at >= CURRENT_DATE - 30
+GROUP BY l.aisle
+ORDER BY l.aisle;`,
+      note: "Warehouses usually aim for 95% or better. All four aisles fall short here, and aisle 1 most of all, so that's where ICQA counts next.",
+    },
+    {
       id: 'ic-overdue',
       title: 'Overdue counts',
       kind: 'query',
