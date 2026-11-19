@@ -59,6 +59,20 @@ WHERE zone_code = 'RSV'
   AND aisle = 3;`,
     },
     {
+      id: 'or-in',
+      title: 'Either one: OR and IN',
+      kind: 'query',
+      skills: ['OR', 'IN'],
+      learn: "**OR** keeps a row when either test is true: `status = 'PICKED' OR status = 'PACKED'`. When every test is on the same column, **IN** says it shorter: `status IN ('PICKED', 'PACKED')`.",
+      prompt: "Packing wants to see what's headed their way: every order whose `status` is PICKED or PACKED.",
+      returns: 'order_no, status, ship_by',
+      tables: ['orders'],
+      solution: `SELECT order_no, status, ship_by
+FROM orders
+WHERE status IN ('PICKED', 'PACKED');`,
+      note: "OR and IN give the same rows here. IN is easier to read once the list has more than two values.",
+    },
+    {
       id: 'or-order',
       title: 'Sort with ORDER BY',
       kind: 'query',
@@ -85,6 +99,19 @@ ORDER BY unit_cost DESC, sku;`,
 FROM items
 ORDER BY weight_lb DESC
 LIMIT 5;`,
+    },
+    {
+      id: 'or-null',
+      title: 'Find the empty ones',
+      kind: 'query',
+      skills: ['IS NULL'],
+      learn: "An empty cell holds **NULL**, which means “no value yet”. NULL isn't equal to anything, not even another NULL, so `= NULL` never finds it. Ask with `IS NULL`, or with `IS NOT NULL` for the filled ones.",
+      prompt: "Every task waits in a queue until someone's scanner takes it. The ones nobody has taken yet have an empty `assigned_to`. List them.",
+      returns: 'task_id, task_type, status, created_at',
+      tables: ['tasks'],
+      solution: `SELECT task_id, task_type, status, created_at
+FROM tasks
+WHERE assigned_to IS NULL;`,
     },
     {
       id: 'or-count',
