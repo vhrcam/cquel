@@ -122,6 +122,7 @@ await page.click('#ghost')
 await openTask('ob-fix-ambiguous')
 await page.waitForFunction(() => document.querySelector('#given .err') !== null, { timeout: 15000 })
 check(/ambiguous/.test(await page.$eval('#given', el => el.textContent ?? '')), 'the broken query shows its real error')
+check(/what it means.*alias/.test(await page.$eval('#given', el => el.textContent ?? '')), 'the error comes with plain-English help')
 check((await page.$$('.ed-layer .gh.chg')).length > 0, 'the fix is underlined in the letters')
 
 // 6. a runaway query gets stopped and Postgres comes back

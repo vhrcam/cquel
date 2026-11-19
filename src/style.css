@@ -327,6 +327,9 @@ tr:last-child td { border-bottom: 0; }
 .err { margin: 0 0 16px; padding: 10px 14px; border: 1px solid rgba(248, 81, 73, 0.45); border-radius: 6px; background: var(--red-tint); color: #ffa198; font: 13px/1.6 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; }
 .err b { color: var(--red); }
 .err-at { display: block; white-space: pre; overflow-x: auto; margin: 2px 0; }
+.err:has(+ .err-help) { margin-bottom: 0; border-radius: 6px 6px 0 0; }
+.err-help { margin: 0 0 16px; padding: 9px 14px; border: 1px solid rgba(248, 81, 73, 0.3); border-top: 0; border-radius: 0 0 6px 6px; background: var(--panel); color: var(--prose); font-size: 13px; }
+.err-help .label { color: var(--muted); margin-right: 8px; }
 .muted { color: var(--muted); }
 
 .scrim { display: none; }

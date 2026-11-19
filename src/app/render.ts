@@ -1,5 +1,6 @@
 import type { Grid } from '../db/compare.ts'
 import type { PgError, RunResult } from '../db/engine.ts'
+import { helpFor } from './errors.ts'
 
 export const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 
@@ -44,7 +45,8 @@ export function errorHtml(sql: string, e: PgError) {
   }
   if (e.detail) parts.push(`<div><b>DETAIL:</b>  ${esc(e.detail)}</div>`)
   if (e.hint) parts.push(`<div><b>HINT:</b>  ${esc(e.hint)}</div>`)
-  return `<div class="err">${parts.join('')}</div>`
+  const help = helpFor(e, sql)
+  return `<div class="err">${parts.join('')}</div>${help ? `<div class="err-help"><span class="label">what it means</span>${inline(help.text)}</div>` : ''}`
 }
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
