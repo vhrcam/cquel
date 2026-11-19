@@ -126,7 +126,7 @@ function loadEditor() {
   editor.set(draft ?? (ghost ? '' : task.given ?? ''), ghost ? task.solution : null, task.kind === 'fix-query' ? task.given : undefined)
   $('hint').textContent = ghost
     ? `type over the transparent letters · it runs when you finish${task.kind === 'fix-query' ? ' · underlined letters are the fix' : ''}`
-    : `letters off: write it from memory · ${RUN_HOW}`
+    : `letters off: write it from memory · ${RUN_HOW}${task.kind === 'fix-data' && !matchMedia('(hover: none)').matches ? ' · select lines to run only those' : ''}`
   explainedText = null
   renderRef()
 }
@@ -315,7 +315,8 @@ function passed(traced: boolean) {
 
 async function run() {
   if (running) return
-  const sql = editor.value
+  const part = editor.selection()
+  const sql = part ?? editor.value
   if (!sql.trim()) return setStatus('pending', 'Nothing to run yet.')
   running = true
   $<HTMLButtonElement>('run').disabled = true
@@ -329,7 +330,7 @@ async function run() {
     lastSql = sql
     outTab = 'output'
     const v = res.verdict
-    setStatus(v.status, v.status === 'pass' ? `✓ ${v.message}` : v.status === 'fail' ? `✗ ${v.message}` : v.message)
+    setStatus(v.status, (v.status === 'pass' ? `✓ ${v.message}` : v.status === 'fail' ? `✗ ${v.message}` : v.message) + (part ? ' · ran only the selected part' : ''))
     if (v.status === 'pass') passed(traced)
     renderOutput()
   } catch (e) {

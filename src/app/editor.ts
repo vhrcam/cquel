@@ -66,6 +66,13 @@ export class TraceEditor {
     return this.input.value
   }
 
+  // The selected text, when there is some: run just that part.
+  selection() {
+    const { selectionStart: a, selectionEnd: b, value } = this.input
+    const part = value.slice(a, b)
+    return b > a && part.trim() ? part : null
+  }
+
   // The query being worked on and where you are in it: the answer and the next letter to trace,
   // or (letters off) your own text and the cursor.
   where() {
