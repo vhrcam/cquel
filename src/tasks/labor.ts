@@ -15,6 +15,25 @@ export const labor: Track = {
   role: "Operations managers run the shifts and answer for the numbers: units per hour, on-time shipping, how long pallets sit on the dock. Every morning an ops analyst turns yesterday's WMS history into those numbers.",
   tasks: [
     {
+      id: 'op-open-work',
+      title: 'Open work right now',
+      kind: 'query',
+      skills: ['FILTER', 'GROUP BY'],
+      learn: "`COUNT(*) FILTER (WHERE …)` can turn values into columns: one count per status, side by side. A supervisor's board reads that way, with one row for each kind of work.",
+      prompt: "The start-of-shift board: for each `task_type`, how many tasks are OPEN (waiting), ASSIGNED (on someone's scanner) and IN_PROGRESS right now?",
+      returns: 'task_type, open, assigned, in_progress · by task_type',
+      tables: ['tasks'],
+      solution: `SELECT task_type,
+       COUNT(*) FILTER (WHERE status = 'OPEN') AS open,
+       COUNT(*) FILTER (WHERE status = 'ASSIGNED') AS assigned,
+       COUNT(*) FILTER (WHERE status = 'IN_PROGRESS') AS in_progress
+FROM tasks
+WHERE status IN ('OPEN', 'ASSIGNED', 'IN_PROGRESS')
+GROUP BY task_type
+ORDER BY task_type;`,
+      note: "Some of that work is stuck on the scanners of people who've left. The WMS Support track finds it and sets it free.",
+    },
+    {
       id: 'op-yesterday',
       title: "Yesterday's work",
       kind: 'query',
