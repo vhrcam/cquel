@@ -35,6 +35,26 @@ GROUP BY status
 ORDER BY orders DESC, status;`,
     },
     {
+      id: 'ob-cutoff',
+      title: 'Cutoff watch',
+      kind: 'query',
+      skills: ['NOT IN', 'INTERVAL'],
+      learn: "`now()::time` keeps just the time of day, like 14:00:00. One time minus another gives a length of time, so `ca.departs_at - now()::time` is how long until the truck leaves. `INTERVAL '3 hours'` is a length of time you can add.",
+      prompt: "Each carrier's truck leaves at its `departs_at` time, and an order that isn't packed by then waits a day. List today's orders (`ship_by` today) that aren't PACKED, SHIPPED or CANCELLED yet and whose truck leaves in the next 3 hours, with the time left.",
+      returns: 'order_no, carrier_code, status, departs_at, time_left · least time left first, then order_no',
+      tables: ['orders', 'carriers'],
+      solution: `SELECT o.order_no, o.carrier_code, o.status, ca.departs_at,
+       ca.departs_at - now()::time AS time_left
+FROM orders o
+JOIN carriers ca ON ca.carrier_code = o.carrier_code
+WHERE o.ship_by = CURRENT_DATE
+  AND o.status NOT IN ('PACKED', 'SHIPPED', 'CANCELLED')
+  AND ca.departs_at > now()::time
+  AND ca.departs_at <= now()::time + INTERVAL '3 hours'
+ORDER BY time_left, o.order_no;`,
+      note: "One Local Fleet order is still PICKING, and its truck left at 11:00. A shipping lead runs a check like this every hour so that doesn't happen.",
+    },
+    {
       id: 'ob-shorts',
       title: 'Short picks',
       kind: 'query',
