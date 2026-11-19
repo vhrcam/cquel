@@ -38,6 +38,33 @@ WHERE inv.qty_on_hand < 0;`,
       note: "ICQA runs a check like this every morning. A negative row usually means someone picked from the wrong location, so a second location is off by the same amount.",
     },
     {
+      id: 'ic-fix-or',
+      title: 'Fix: AND before OR',
+      kind: 'fix-query',
+      skills: ['OR', 'AND'],
+      learn: "When a WHERE mixes AND and OR, Postgres does the ANDs first, the way math does × before +. So `a OR b AND c` means `a OR (b AND c)`, however the lines are broken up.",
+      prompt: "HOLD and DAMAGED stock belongs in the quality cage (zone `QAH`), where nobody can pick it by mistake. This check should list held or damaged stock sitting anywhere else, but it also lists stock that's already in the cage. Fix it.",
+      returns: 'sku, location_code, inv_status, qty_on_hand · by location_code',
+      tables: ['inventory', 'items', 'locations'],
+      given: `SELECT i.sku, l.location_code, inv.inv_status, inv.qty_on_hand
+FROM inventory inv
+JOIN items i ON i.item_id = inv.item_id
+JOIN locations l ON l.location_id = inv.location_id
+WHERE inv.inv_status = 'HOLD'
+   OR inv.inv_status = 'DAMAGED'
+  AND l.zone_code <> 'QAH'
+ORDER BY l.location_code;`,
+      solution: `SELECT i.sku, l.location_code, inv.inv_status, inv.qty_on_hand
+FROM inventory inv
+JOIN items i ON i.item_id = inv.item_id
+JOIN locations l ON l.location_id = inv.location_id
+WHERE (inv.inv_status = 'HOLD'
+   OR inv.inv_status = 'DAMAGED')
+  AND l.zone_code <> 'QAH'
+ORDER BY l.location_code;`,
+      note: "`inv.inv_status IN ('HOLD', 'DAMAGED')` fixes it too, and leaves no OR to get wrong. The three pallets it finds are all in reserve racking: two of a recalled lot, and one more that quality is holding.",
+    },
+    {
       id: 'ic-expiring',
       title: 'Expiring soon',
       kind: 'query',
